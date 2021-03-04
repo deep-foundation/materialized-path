@@ -288,20 +288,20 @@ export const up = async () => {
     },
   });
   await api.sql(trigger.upFunctionIsRoot());
-  await api.sql(trigger.upFunctionInsertNode());
   await api.sql(trigger.upFunctionWillRoot());
+  await api.sql(trigger.upFunctionInsertNode());
   await api.sql(trigger.upFunctionDeleteNode());
   await api.sql(trigger.upTriggerDelete());
   await api.sql(trigger.upTriggerInsert());
 };
 
 export const down = async () => {
-  await api.sql(trigger.downFunctionIsRoot());
-  await api.sql(trigger.downFunctionInsertNode());
-  await api.sql(trigger.downFunctionWillRoot());
-  await api.sql(trigger.downFunctionDeleteNode());
   await api.sql(trigger.downTriggerDelete());
   await api.sql(trigger.downTriggerInsert());
+  await api.sql(trigger.downFunctionInsertNode());
+  await api.sql(trigger.downFunctionDeleteNode());
+  await api.sql(trigger.downFunctionIsRoot());
+  await api.sql(trigger.downFunctionWillRoot());
   await api.query({
     type: 'drop_relationship',
     args: {
