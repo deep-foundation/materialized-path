@@ -20,10 +20,10 @@ const trigger = Trigger({
 export const up = async () => {
   await api.sql(sql`
     CREATE TABLE ${SCHEMA}."${GRAPH_TABLE}" (id integer, from_id integer, to_id integer, type_id integer);
-    CREATE SEQUENCE nodes_id_seq
+    CREATE SEQUENCE ${GRAPH_TABLE}_id_seq
     AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
-    ALTER SEQUENCE nodes_id_seq OWNED BY ${SCHEMA}."${GRAPH_TABLE}".id;
-    ALTER TABLE ONLY ${SCHEMA}."${GRAPH_TABLE}" ALTER COLUMN id SET DEFAULT nextval('nodes_id_seq'::regclass);
+    ALTER SEQUENCE ${GRAPH_TABLE}_id_seq OWNED BY ${SCHEMA}."${GRAPH_TABLE}".id;
+    ALTER TABLE ONLY ${SCHEMA}."${GRAPH_TABLE}" ALTER COLUMN id SET DEFAULT nextval('${GRAPH_TABLE}_id_seq'::regclass);
   `);
   await api.sql(sql`
     CREATE TABLE ${SCHEMA}."${MP_TABLE}" (id integer,item_id integer,path_item_id integer,path_item_depth integer,root_id integer,position_id text DEFAULT ${SCHEMA}.gen_random_uuid());
