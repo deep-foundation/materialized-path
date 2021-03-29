@@ -1,6 +1,6 @@
 {
   "name": "@deepcase/materialized-path",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "license": "ISC",
   "author": "Ivan S Glazunov <ivansglazunov@gmail.com>",
   "homepage": "https://github.com/deepcase/materialized-path",
@@ -14,23 +14,23 @@
   "description": "",
   "dependencies": {
     "@deepcase/hasura": "*",
-    "@types/jest": "^26.0.20",
+    "@types/jest": "^26.0.22",
     "@types/node": "^14.0.23",
     "@types/react": "^17.0.2",
     "chance": "^1.1.7",
-    "jest": "^26.6.3",
-    "ts-jest": "^26.5.3",
+    "ts-jest": "^26.5.4",
     "typescript": "^3.9.7"
   },
   "scripts": {
     "package:build": "npx tsc --project tsconfig.json && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
-    "package:unbuild": "rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts",
+    "package:unbuild": "rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
     "package:publish": "npm run package:build; npm publish --access public; npm run package:unbuild",
-    "migrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; MIGRATIONS_EXAMPLE_URL=$(echo $(gp url 3001) | awk -F[/:] '{print $4}'); export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate up --compiler='ts:@deepcase/hasura/compiler/index.js'",
-    "unmigrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; MIGRATIONS_EXAMPLE_URL=$(echo $(gp url 3001) | awk -F[/:] '{print $4}'); export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate down --compiler='ts:@deepcase/hasura/compiler/index.js'",
-    "test": "export $(grep -v '^#' .env | xargs); DEBUG='deepcase:*' npx jest",
-    "gitpod-test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; npm run test",
-    "local-test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; npm run test"
+    "gitpod-test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; DEBUG='deepcase:*' npx jest",
+    "gitpod-migrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate up --compiler='ts:@deepcase/hasura/compiler/index.js'",
+    "gitpod-unmigrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate down --compiler='ts:@deepcase/hasura/compiler/index.js'",
+    "local-test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; DEBUG='deepcase:*' npx jest",
+    "local-migrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate up --compiler='ts:@deepcase/hasura/compiler/index.js'",
+    "local-unmigrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate down --compiler='ts:@deepcase/hasura/compiler/index.js'"
   },
   "devDependencies": {
     "pre-commit": "^1.2.2"
