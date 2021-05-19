@@ -17,16 +17,10 @@
   ```
 - Unmigrate previous test tables, migrate again
   ```
-  # on gitpod
-  npm run gitpod-unmigrate && npm run gitpod-migrate && npm run gitpod-test
-  # locally
-  npm run local-unmigrate && npm run local-migrate && npm run local-test
+  npm run unmigrate && npm run migrate && npm run test
   ```
 
 ## test
 ```
-# on gitpod
-npm run gitpod-test
-# locally
-npm run local-test
+npm run test
 ```
