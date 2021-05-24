@@ -8,16 +8,17 @@ const api = new HasuraApi({
   secret: process.env.MIGRATIONS_HASURA_SECRET,
 });
 
-const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
-const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
-const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
+const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
+const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
 
-const trigger = Trigger({
-  mpTableName: MP_TABLE,
-  graphTableName: GRAPH_TABLE,
-});
-
-export const up = async () => {
+export const up = async ({
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE,
+  trigger = Trigger({
+    mpTableName: MP_TABLE,
+    graphTableName: GRAPH_TABLE,
+  }),
+} = {}) => {
   await api.sql(sql`
     CREATE TABLE ${SCHEMA}."${GRAPH_TABLE}" (id integer, from_id integer, to_id integer, type_id integer);
     CREATE SEQUENCE ${GRAPH_TABLE}_id_seq
@@ -295,7 +296,13 @@ export const up = async () => {
   await api.sql(trigger.upTriggerInsert());
 };
 
-export const down = async () => {
+export const down = async ({
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE,
+  trigger = Trigger({
+    mpTableName: MP_TABLE,
+    graphTableName: GRAPH_TABLE,
+  }),
+} = {}) => {
   await api.sql(trigger.downTriggerDelete());
   await api.sql(trigger.downTriggerInsert());
   await api.sql(trigger.downFunctionInsertNode());
