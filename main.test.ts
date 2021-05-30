@@ -12,6 +12,7 @@ const debug = Debug('deepcase:materialized-path:test');
 const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
 const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
 const DELAY = +process.env.DELAY || 0;
 const delay = time => new Promise(res => setTimeout(res, time));
@@ -24,8 +25,8 @@ const itDelay = () => {
   }
 };
 
-const insertNode = async (type_id: number) => {
-  const result = await client.mutate({ mutation: gql`mutation InsertNode($type_id: Int) {
+const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
+  const result = await client.mutate({ mutation: gql`mutation InsertNode($type_id: ${idType}) {
     insert_nodes: insert_${GRAPH_TABLE}(objects: { type_id: $type_id }) { returning { id } }
   }`, variables: { type_id } });
   if (result?.errors) throw result?.errors;
@@ -43,8 +44,8 @@ const insertNodes = async (nodes) => {
   debug(`insert nodes ${ids.length}`);
   return ids;
 };
-const insertLink = async (fromId: number, toId: number, type_id: number) => {
-  const result = await client.mutate({ mutation: gql`mutation InsertLink($fromId: Int, $toId: Int, $type_id: Int) {
+const insertLink = async (fromId: number, toId: number, type_id: number, idType: string = ID_TYPE) => {
+  const result = await client.mutate({ mutation: gql`mutation InsertLink($fromId: ${idType}, $toId: ${idType}, $type_id: ${idType}) {
     insert_nodes: insert_${GRAPH_TABLE}(objects: { from_id: $fromId, to_id: $toId, type_id: $type_id }) { returning { id } }
   }`, variables: { fromId, toId, type_id } });
   if (result?.errors) throw result?.errors;
@@ -52,16 +53,16 @@ const insertLink = async (fromId: number, toId: number, type_id: number) => {
   debug(`insert link #${id} (#${fromId} -> #${toId})`);
   return id;
 };
-const clear = async (type_id: number) => {
-  const result = await client.mutate({ mutation: gql`mutation Clear($type_id: Int) {
+const clear = async (type_id: number, idType: string = ID_TYPE) => {
+  const result = await client.mutate({ mutation: gql`mutation Clear($type_id: ${idType}) {
     delete_nodes__mp: delete_${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { affected_rows }
     delete_nodes: delete_${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { affected_rows }
   }`, variables: { type_id } });
   if (result?.errors) throw result?.errors;
   debug(`clear type_id #${type_id}`);
 };
-const deleteNode = async (id: number) => {
-  const result = await client.mutate({ mutation: gql`mutation DeleteNode($id: Int) {
+const deleteNode = async (id: number, idType: string = ID_TYPE) => {
+  const result = await client.mutate({ mutation: gql`mutation DeleteNode($id: ${idType}) {
     delete_nodes: delete_${GRAPH_TABLE}(where: { id: { _eq: $id } }) { returning { id } }
   }`, variables: { id } });
   if (result?.errors) throw result?.errors;
@@ -89,8 +90,8 @@ const generateTree = (initialId, count = 1000) => {
   return { array, paths };
 };
 
-const findNoParent = async (notId: number, type_id: number) => {
-  const result = await client.query({ query: gql`query FIND_NO_PARENT($notId: Int, $type_id: Int) {
+const findNoParent = async (notId: number, type_id: number, idType: string = ID_TYPE) => {
+  const result = await client.query({ query: gql`query FIND_NO_PARENT($notId: ${idType}, $type_id: ${idType}) {
     nodes: ${GRAPH_TABLE}(where: {
       from_id: { _is_null: true },
       to_id: { _is_null: true },

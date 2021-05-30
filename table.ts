@@ -11,14 +11,15 @@ const api = new HasuraApi({
 const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
 const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const DEFAULT_ID_TYPE_SQL = process.env.MIGRATIONS_ID_TYPE_SQL || 'integer';
 
 export const up = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, ID_TYPE = DEFAULT_ID_TYPE_SQL
 } = {}) => {
   await api.sql(sql`
-    CREATE TABLE ${SCHEMA}."${MP_TABLE}" (id integer,item_id integer,path_item_id integer,path_item_depth integer,root_id integer,position_id text DEFAULT ${SCHEMA}.gen_random_uuid());
+    CREATE TABLE ${SCHEMA}."${MP_TABLE}" (id ${ID_TYPE},item_id ${ID_TYPE},path_item_id ${ID_TYPE},path_item_depth ${ID_TYPE},root_id ${ID_TYPE},position_id text DEFAULT ${SCHEMA}.gen_random_uuid());
     CREATE SEQUENCE ${SCHEMA}.${MP_TABLE}_id_seq
-    AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+    AS ${ID_TYPE} START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
     ALTER SEQUENCE ${SCHEMA}.${MP_TABLE}_id_seq OWNED BY ${SCHEMA}.${MP_TABLE}.id;
     ALTER TABLE ONLY ${SCHEMA}.${MP_TABLE} ALTER COLUMN id SET DEFAULT nextval('${SCHEMA}.${MP_TABLE}_id_seq'::regclass);
   `);

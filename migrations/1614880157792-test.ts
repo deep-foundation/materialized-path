@@ -14,18 +14,20 @@ const api = new HasuraApi({
 const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
 const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const DEFAULT_ID_TYPE = process.env.MIGRATIONS_ID_TYPE_SQL || 'integer';
 
 export const up = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE,
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE, ID_TYPE = DEFAULT_ID_TYPE,
   trigger = Trigger({
     mpTableName: MP_TABLE,
     graphTableName: GRAPH_TABLE,
+    id_type: DEFAULT_ID_TYPE,
   }),
 } = {}) => {
   await api.sql(sql`
-    CREATE TABLE ${SCHEMA}."${GRAPH_TABLE}" (id integer, from_id integer, to_id integer, type_id integer);
+    CREATE TABLE ${SCHEMA}."${GRAPH_TABLE}" (id ${ID_TYPE}, from_id ${ID_TYPE}, to_id ${ID_TYPE}, type_id ${ID_TYPE});
     CREATE SEQUENCE ${GRAPH_TABLE}_id_seq
-    AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+    AS ${ID_TYPE} START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
     ALTER SEQUENCE ${GRAPH_TABLE}_id_seq OWNED BY ${SCHEMA}."${GRAPH_TABLE}".id;
     ALTER TABLE ONLY ${SCHEMA}."${GRAPH_TABLE}" ALTER COLUMN id SET DEFAULT nextval('${GRAPH_TABLE}_id_seq'::regclass);
   `);
@@ -103,6 +105,7 @@ export const down = async ({
   trigger = Trigger({
     mpTableName: MP_TABLE,
     graphTableName: GRAPH_TABLE,
+    id_type: DEFAULT_ID_TYPE,
   }),
 } = {}) => {
   await api.sql(trigger.downTriggerDelete());

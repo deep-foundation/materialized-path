@@ -10,6 +10,16 @@
   HASURA_PATH='localhost:8080'
   HASURA_SSL=0
   HASURA_SECRET='myadminsecretkey'
+
+  MIGRATIONS_HASURA_PATH='localhost:8080'
+  MIGRATIONS_HASURA_SSL=0
+  MIGRATIONS_HASURA_SECRET='myadminsecretkey'
+
+  MIGRATIONS_SCHEMA='public'
+  MIGRATIONS_MP_TABLE='mp_example__nodes__mp'
+  MIGRATIONS_GRAPH_TABLE='mp_example__nodes'
+  MIGRATIONS_ID_TYPE_GQL='Int'
+  MIGRATIONS_ID_TYPE_SQL='integer'
   ```
 - Optional for tests delay
   ```sh

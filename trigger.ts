@@ -6,6 +6,7 @@ export interface IOptions {
   id_field?: string;
   to_field?: string;
   from_field?: string;
+  id_type?: string;
 }
 
 export const Trigger = ({
@@ -14,9 +15,10 @@ export const Trigger = ({
   id_field = 'id',
   to_field = 'to_id',
   from_field = 'from_id',
+  id_type = 'integer',
 }: IOptions) => ({
   downFunctionIsRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__is_root;`,
-  upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id integer) RETURNS boolean AS $$
+  upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id ${id_type}) RETURNS boolean AS $$
   DECLARE
   DECLARE result BOOLEAN;
   BEGIN
@@ -235,7 +237,7 @@ export const Trigger = ({
   $trigger$ LANGUAGE plpgsql;`,
   
   downFunctionWillRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__will_root;`,
-  upFunctionWillRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__will_root(node_id integer, link_id integer) RETURNS boolean AS $$
+  upFunctionWillRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__will_root(node_id ${id_type}, link_id ${id_type}) RETURNS boolean AS $$
   DECLARE
   DECLARE result BOOLEAN;
   BEGIN
