@@ -43,7 +43,7 @@ export const Trigger = ({
     toFlow RECORD;
     positionId TEXT;
   BEGIN
-    IF (NEW."${from_field}" IS NOT NULL OR NEW."${to_field}" IS NOT NULL)
+    IF ((NEW."${from_field}" IS NOT NULL AND NEW."${from_field}" != 0) OR (NEW."${to_field}" IS NOT NULL AND NEW."${to_field}" != 0))
     THEN
       -- IL
       -- ILTR
@@ -260,7 +260,7 @@ export const Trigger = ({
     linkFlow RECORD;
     nodesFlow RECORD;
   BEGIN
-    IF (OLD."${from_field}" IS NOT NULL OR OLD."${to_field}" IS NOT NULL)
+    IF ((OLD."${from_field}" IS NOT NULL AND OLD."${from_field}" != 0) OR (OLD."${to_field}" IS NOT NULL AND OLD."${to_field}" != 0))
     THEN
       -- DL
       IF (SELECT * FROM ${mpTableName}__will_root(OLD."${to_field}", OLD."id"))
