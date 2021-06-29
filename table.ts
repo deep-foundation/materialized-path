@@ -22,6 +22,16 @@ export const up = async ({
     AS ${ID_TYPE} START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
     ALTER SEQUENCE ${SCHEMA}.${MP_TABLE}_id_seq OWNED BY ${SCHEMA}.${MP_TABLE}.id;
     ALTER TABLE ONLY ${SCHEMA}.${MP_TABLE} ALTER COLUMN id SET DEFAULT nextval('${SCHEMA}.${MP_TABLE}_id_seq'::regclass);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__id_hash ON ${MP_TABLE} USING hash (id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_hash ON ${MP_TABLE} USING hash (item_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_btree ON ${MP_TABLE} USING btree (item_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_id_hash ON ${MP_TABLE} USING hash (path_item_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_id_btree ON ${MP_TABLE} USING btree (path_item_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_depth_btree ON ${MP_TABLE} USING btree (path_item_depth);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__root_id_hash ON ${MP_TABLE} USING hash (root_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__root_id_btree ON ${MP_TABLE} USING btree (root_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__position_id_hash ON ${MP_TABLE} USING hash (position_id);
+    CREATE INDEX IF NOT EXISTS ${MP_TABLE}__position_id_btree ON ${MP_TABLE} USING btree (position_id);
   `);
   await api.query({
     type: 'track_table',
