@@ -19,7 +19,6 @@ export const Trigger = ({
 }: IOptions) => ({
   downFunctionIsRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__is_root;`,
   upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id ${id_type}) RETURNS boolean AS $$
-  DECLARE
   DECLARE result BOOLEAN;
   BEGIN
     SELECT COUNT("id") >= 1
@@ -238,7 +237,6 @@ export const Trigger = ({
   
   downFunctionWillRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__will_root;`,
   upFunctionWillRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__will_root(node_id ${id_type}, link_id ${id_type}) RETURNS boolean AS $$
-  DECLARE
   DECLARE result BOOLEAN;
   BEGIN
     SELECT COUNT("${id_field}") = 0
