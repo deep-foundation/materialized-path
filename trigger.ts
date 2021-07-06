@@ -7,6 +7,14 @@ export interface IOptions {
   to_field?: string;
   from_field?: string;
   id_type?: string;
+  iteratorInsertDeclare?: string;
+  iteratorInsertBegin?: string;
+  iteratorInsertEnd?: string;
+  iteratorDeleteDeclare?: string;
+  iteratorDeleteBegin?: string;
+  iteratorDeleteEnd?: string;
+  groupInsert?: string;
+  groupDelete?: string;
 }
 
 export const Trigger = ({
@@ -16,9 +24,17 @@ export const Trigger = ({
   to_field = 'to_id',
   from_field = 'from_id',
   id_type = 'integer',
+  iteratorInsertDeclare = '',
+  iteratorInsertBegin = '',
+  iteratorInsertEnd = '',
+  iteratorDeleteDeclare = '',
+  iteratorDeleteBegin = '',
+  iteratorDeleteEnd = '',
+  groupInsert = '',
+  groupDelete = '',
 }: IOptions) => ({
   downFunctionIsRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__is_root;`,
-  upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id ${id_type}) RETURNS boolean AS $$
+  upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id ${id_type}, group_id_arg ${id_type}) RETURNS boolean AS $$
   DECLARE result BOOLEAN;
   BEGIN
     SELECT COUNT("id") >= 1
@@ -28,7 +44,8 @@ export const Trigger = ({
     WHERE
     "item_id" = node_id AND
     "path_item_id" = node_id AND
-    "path_item_depth" = 0
+    "path_item_depth" = 0 AND
+    "group_id" = group_id_arg
     LIMIT 1;
     RETURN result;
   END;
@@ -41,196 +58,208 @@ export const Trigger = ({
     fromFlow RECORD;
     toFlow RECORD;
     positionId TEXT;
+    ${iteratorInsertDeclare}
   BEGIN
-    IF ((NEW."${from_field}" IS NOT NULL AND NEW."${from_field}" != 0) OR (NEW."${to_field}" IS NOT NULL AND NEW."${to_field}" != 0))
-    THEN
-      -- IL
-      -- ILTR
-      IF (SELECT * FROM ${mpTableName}__is_root(NEW."${to_field}"))
+    ${iteratorInsertBegin}
+      IF ((NEW."${from_field}" IS NOT NULL AND NEW."${from_field}" != 0) OR (NEW."${to_field}" IS NOT NULL AND NEW."${to_field}" != 0))
       THEN
-        -- ILS
-        FOR fromFlow
-        IN (
-          -- find all .from flows
-          SELECT fromFlowItem.*
-          FROM "${mpTableName}" as fromFlowItem
-          WHERE
-          fromFlowItem."item_id" = NEW."${from_field}" AND
-          fromFlowItem."path_item_id" = NEW."${from_field}"
-        )
-        LOOP
-          SELECT gen_random_uuid() INTO positionId;
-  
-          -- spread to link
-          INSERT INTO "${mpTableName}"
-          ("item_id","path_item_id","path_item_depth","root_id","position_id")
-          SELECT
-          NEW."${id_field}",
-          fromItemPath."path_item_id",
-          fromItemPath."path_item_depth",
-          fromItemPath."root_id",
-          positionId
-          FROM "${mpTableName}" AS fromItemPath
-          WHERE
-          fromItemPath."item_id" = fromFlow."item_id" AND
-          fromItemPath."root_id" = fromFlow."root_id";
-  
-          INSERT INTO "${mpTableName}"
-          ("item_id","path_item_id","path_item_depth","root_id","position_id")
-          VALUES
-          (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId);
-  
-          FOR toFlow
+        -- IL
+        -- ILTR
+        IF (SELECT * FROM ${mpTableName}__is_root(NEW."${to_field}", ${groupInsert}))
+        THEN
+          -- ILS
+          FOR fromFlow
           IN (
-            -- find all .to and down nodes
-            SELECT toFlowItem.*
-            FROM "${mpTableName}" as toFlowItem
+            -- find all .from flows
+            SELECT fromFlowItem.*
+            FROM "${mpTableName}" as fromFlowItem
             WHERE
-            toFlowItem."root_id" = NEW."${to_field}" AND
-            toFlowItem."path_item_depth" = 0
+            fromFlowItem."item_id" = NEW."${from_field}" AND
+            fromFlowItem."group_id" = ${groupInsert} AND
+            fromFlowItem."path_item_id" = NEW."${from_field}"
           )
           LOOP
             SELECT gen_random_uuid() INTO positionId;
-  
-            -- toFlow."item_id"
-  
-            -- clone root flow path with move depth
+    
+            -- spread to link
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id")
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
             SELECT
-            toItemPath."item_id",
-            toItemPath."path_item_id",
-            toItemPath."path_item_depth" + fromFlow."path_item_depth" + 2,
-            fromFlow."root_id",
-            positionId
-            FROM "${mpTableName}" AS toItemPath
-            WHERE
-            toItemPath."position_id" = toFlow."position_id";
-  
-            INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id")
-            VALUES
-            (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId);
-  
-            -- fill path in moved area
-            INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id")
-            SELECT
-            toFlow."item_id",
+            NEW."${id_field}",
             fromItemPath."path_item_id",
             fromItemPath."path_item_depth",
             fromItemPath."root_id",
-            positionId
+            positionId,
+            ${groupInsert}
             FROM "${mpTableName}" AS fromItemPath
             WHERE
             fromItemPath."item_id" = fromFlow."item_id" AND
             fromItemPath."root_id" = fromFlow."root_id";
-  
+    
+            INSERT INTO "${mpTableName}"
+            ("item_id","path_item_id","path_item_depth","root_id","position_id", "group_id")
+            VALUES
+            (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+    
+            FOR toFlow
+            IN (
+              -- find all .to and down nodes
+              SELECT toFlowItem.*
+              FROM "${mpTableName}" as toFlowItem
+              WHERE
+              toFlowItem."root_id" = NEW."${to_field}" AND
+              toFlowItem."path_item_depth" = 0 AND
+              toFlowItem."group_id" = ${groupInsert}
+            )
+            LOOP
+              SELECT gen_random_uuid() INTO positionId;
+    
+              -- toFlow."item_id"
+    
+              -- clone root flow path with move depth
+              INSERT INTO "${mpTableName}"
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              SELECT
+              toItemPath."item_id",
+              toItemPath."path_item_id",
+              toItemPath."path_item_depth" + fromFlow."path_item_depth" + 2,
+              fromFlow."root_id",
+              positionId,
+              ${groupInsert}
+              FROM "${mpTableName}" AS toItemPath
+              WHERE
+              toItemPath."position_id" = toFlow."position_id";
+    
+              INSERT INTO "${mpTableName}"
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              VALUES
+              (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+    
+              -- fill path in moved area
+              INSERT INTO "${mpTableName}"
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              SELECT
+              toFlow."item_id",
+              fromItemPath."path_item_id",
+              fromItemPath."path_item_depth",
+              fromItemPath."root_id",
+              positionId,
+              ${groupInsert}
+              FROM "${mpTableName}" AS fromItemPath
+              WHERE
+              fromItemPath."item_id" = fromFlow."item_id" AND
+              fromItemPath."root_id" = fromFlow."root_id";
+    
+            END LOOP;
+    
+            -- ILTFD
+            DELETE FROM "${mpTableName}"
+            WHERE "root_id" = NEW."${to_field}";
           END LOOP;
-  
-          -- ILTFD
-          DELETE FROM "${mpTableName}"
-          WHERE "root_id" = NEW."${to_field}";
-        END LOOP;
+        ELSE
+          -- ILTRF
+          -- ILS
+          FOR fromFlow
+          IN (
+            -- find all .from flows
+            SELECT fromFlowItem.*
+            FROM "${mpTableName}" as fromFlowItem
+            WHERE
+            fromFlowItem."item_id" = NEW."${from_field}" AND
+            fromFlowItem."path_item_id" = NEW."${from_field}"
+          )
+          LOOP
+            SELECT gen_random_uuid() INTO positionId;
+    
+            -- spread to link
+            INSERT INTO "${mpTableName}"
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+            SELECT
+            NEW."${id_field}",
+            fromItemPath."path_item_id",
+            fromItemPath."path_item_depth",
+            fromItemPath."root_id",
+            positionId,
+            ${groupInsert}
+            FROM "${mpTableName}" AS fromItemPath
+            WHERE
+            fromItemPath."item_id" = fromFlow."item_id" AND
+            fromItemPath."root_id" = fromFlow."root_id";
+    
+            INSERT INTO "${mpTableName}"
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+            VALUES
+            (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+    
+            FOR toFlow
+            IN (
+              -- ILTD ONLY DIFFERENCE!!!
+              -- find all nodes of link flows next
+              SELECT
+              DISTINCT ON (nodesFlowPath."item_id") nodesFlowPath."item_id",
+              nodesFlowPath."id",
+              nodesFlowPath."path_item_id",
+              nodesFlowPath."path_item_depth",
+              nodesFlowPath."root_id",
+              nodesFlowPath."position_id"
+              FROM "${mpTableName}" as nodesFlowPath
+              WHERE
+              nodesFlowPath."path_item_id" = NEW."${to_field}" AND
+              nodesFlowPath."group_id" = ${groupInsert}
+            )
+            LOOP
+              SELECT gen_random_uuid() INTO positionId;
+    
+              -- toFlow."item_id"
+    
+              -- clone root flow path with move depzth
+              INSERT INTO "${mpTableName}"
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              SELECT
+              toItemPath."item_id",
+              toItemPath."path_item_id",
+              toItemPath."path_item_depth" + fromFlow."path_item_depth" + 2,
+              fromFlow."root_id",
+              positionId,
+              ${groupInsert}
+              FROM "${mpTableName}" AS toItemPath
+              WHERE
+              toItemPath."position_id" = toFlow."position_id" AND
+              toItemPath."path_item_depth" >= toFlow."path_item_depth";
+    
+              INSERT INTO "${mpTableName}"
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              VALUES
+              (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+    
+              -- fill path in moved area
+              INSERT INTO "${mpTableName}"
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              SELECT
+              toFlow."item_id",
+              fromItemPath."path_item_id",
+              fromItemPath."path_item_depth",
+              fromItemPath."root_id",
+              positionId,
+              ${groupInsert}
+              FROM "${mpTableName}" AS fromItemPath
+              WHERE
+              fromItemPath."item_id" = fromFlow."item_id" AND
+              fromItemPath."root_id" = fromFlow."root_id";
+    
+            END LOOP;
+          END LOOP;
+        END IF;
       ELSE
-        -- ILTRF
-        -- ILS
-        FOR fromFlow
-        IN (
-          -- find all .from flows
-          SELECT fromFlowItem.*
-          FROM "${mpTableName}" as fromFlowItem
-          WHERE
-          fromFlowItem."item_id" = NEW."${from_field}" AND
-          fromFlowItem."path_item_id" = NEW."${from_field}"
-        )
-        LOOP
-          SELECT gen_random_uuid() INTO positionId;
-  
-          -- spread to link
-          INSERT INTO "${mpTableName}"
-          ("item_id","path_item_id","path_item_depth","root_id","position_id")
-          SELECT
-          NEW."${id_field}",
-          fromItemPath."path_item_id",
-          fromItemPath."path_item_depth",
-          fromItemPath."root_id",
-          positionId
-          FROM "${mpTableName}" AS fromItemPath
-          WHERE
-          fromItemPath."item_id" = fromFlow."item_id" AND
-          fromItemPath."root_id" = fromFlow."root_id";
-  
-          INSERT INTO "${mpTableName}"
-          ("item_id","path_item_id","path_item_depth","root_id","position_id")
-          VALUES
-          (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId);
-  
-          FOR toFlow
-          IN (
-            -- ILTD ONLY DIFFERENCE!!!
-            -- find all nodes of link flows next
-            SELECT
-            DISTINCT ON (nodesFlowPath."item_id") nodesFlowPath."item_id",
-            nodesFlowPath."id",
-            nodesFlowPath."path_item_id",
-            nodesFlowPath."path_item_depth",
-            nodesFlowPath."root_id",
-            nodesFlowPath."position_id"
-            FROM "${mpTableName}" as nodesFlowPath
-            WHERE
-            nodesFlowPath."path_item_id" = NEW."${to_field}"
-          )
-          LOOP
-            SELECT gen_random_uuid() INTO positionId;
-  
-            -- toFlow."item_id"
-  
-            -- clone root flow path with move depth
-            INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id")
-            SELECT
-            toItemPath."item_id",
-            toItemPath."path_item_id",
-            toItemPath."path_item_depth" + fromFlow."path_item_depth" + 2,
-            fromFlow."root_id",
-            positionId
-            FROM "${mpTableName}" AS toItemPath
-            WHERE
-            toItemPath."position_id" = toFlow."position_id" AND
-            toItemPath."path_item_depth" >= toFlow."path_item_depth";
-  
-            INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id")
-            VALUES
-            (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId);
-  
-            -- fill path in moved area
-            INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id")
-            SELECT
-            toFlow."item_id",
-            fromItemPath."path_item_id",
-            fromItemPath."path_item_depth",
-            fromItemPath."root_id",
-            positionId
-            FROM "${mpTableName}" AS fromItemPath
-            WHERE
-            fromItemPath."item_id" = fromFlow."item_id" AND
-            fromItemPath."root_id" = fromFlow."root_id";
-  
-          END LOOP;
-        END LOOP;
+        -- IN
+        -- INR
+        -- INRR
+        INSERT INTO "${mpTableName}"
+        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+        VALUES
+        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert});
       END IF;
-    ELSE
-      -- IN
-      -- INR
-      -- INRR
-      INSERT INTO "${mpTableName}"
-      ("item_id","path_item_id","path_item_depth","root_id","position_id")
-      VALUES
-      (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid());
-    END IF;
+    ${iteratorInsertEnd}
     RETURN NEW;
   END;
   $trigger$ LANGUAGE plpgsql;`,
@@ -257,72 +286,77 @@ export const Trigger = ({
   DECLARE
     linkFlow RECORD;
     nodesFlow RECORD;
+    ${iteratorDeleteDeclare}
   BEGIN
-    IF ((OLD."${from_field}" IS NOT NULL AND OLD."${from_field}" != 0) OR (OLD."${to_field}" IS NOT NULL AND OLD."${to_field}" != 0))
-    THEN
-      -- DL
-      IF (SELECT * FROM ${mpTableName}__will_root(OLD."${to_field}", OLD."id"))
+    ${iteratorDeleteBegin}
+      IF ((OLD."${from_field}" IS NOT NULL AND OLD."${from_field}" != 0) OR (OLD."${to_field}" IS NOT NULL AND OLD."${to_field}" != 0))
       THEN
-        -- DLWRF
-        FOR nodesFlow
-        IN (
-          -- find all nodes of link flows next
-          SELECT
-          DISTINCT ON (nodesFlowPath."item_id") nodesFlowPath."item_id",
-          nodesFlowPath."id",
-          nodesFlowPath."path_item_id",
-          nodesFlowPath."path_item_depth",
-          nodesFlowPath."root_id",
-          nodesFlowPath."position_id"
-          FROM "${mpTableName}" as nodesFlowPath
-          WHERE
-          nodesFlowPath."path_item_id" = OLD."id"
-        )
-        LOOP
-          DELETE FROM "${mpTableName}"
-          WHERE
-          "position_id" = nodesFlow."position_id" AND
-          "path_item_depth" <= nodesFlow."path_item_depth";
-  
-          UPDATE "${mpTableName}"
-          SET
-          "path_item_depth" = "path_item_depth" - (nodesFlow."path_item_depth" + 1),
-          "root_id" = OLD."${to_field}"
-          WHERE "position_id" = nodesFlow."position_id";
-        END LOOP;
-  
-        -- DLWRF
-        FOR linkFlow
-        IN (
-          -- find all path items of link next
-          SELECT linkFlowPath.*
-          FROM "${mpTableName}" as linkFlowPath
-          WHERE
-          linkFlowPath."path_item_id" = OLD."id"
-        )
-        LOOP
-          DELETE FROM "${mpTableName}"
-          WHERE "position_id" = linkFlow."position_id";
-        END LOOP;
-  
+        -- DL
+        IF (SELECT * FROM ${mpTableName}__will_root(OLD."${to_field}", OLD."id"))
+        THEN
+          -- DLWRF
+          FOR nodesFlow
+          IN (
+            -- find all nodes of link flows next
+            SELECT
+            DISTINCT ON (nodesFlowPath."item_id") nodesFlowPath."item_id",
+            nodesFlowPath."id",
+            nodesFlowPath."path_item_id",
+            nodesFlowPath."path_item_depth",
+            nodesFlowPath."root_id",
+            nodesFlowPath."position_id",
+            nodesFlowPath."group_id"
+            FROM "${mpTableName}" as nodesFlowPath
+            WHERE
+            nodesFlowPath."path_item_id" = OLD."id" AND
+            nodesFlowPath."group_id" = ${groupDelete}
+          )
+          LOOP
+            DELETE FROM "${mpTableName}"
+            WHERE
+            "position_id" = nodesFlow."position_id" AND
+            "path_item_depth" <= nodesFlow."path_item_depth";
+    
+            UPDATE "${mpTableName}"
+            SET
+            "path_item_depth" = "path_item_depth" - (nodesFlow."path_item_depth" + 1),
+            "root_id" = OLD."${to_field}"
+            WHERE "position_id" = nodesFlow."position_id";
+          END LOOP;
+    
+          -- DLWRF
+          FOR linkFlow
+          IN (
+            -- find all path items of link next
+            SELECT linkFlowPath.*
+            FROM "${mpTableName}" as linkFlowPath
+            WHERE
+            linkFlowPath."path_item_id" = OLD."id"
+          )
+          LOOP
+            DELETE FROM "${mpTableName}"
+            WHERE "position_id" = linkFlow."position_id";
+          END LOOP;
+    
+        ELSE
+          -- DLWRF
+          FOR linkFlow
+          IN (
+            -- find all path items of link next
+            SELECT linkFlowPath.*
+            FROM "${mpTableName}" as linkFlowPath
+            WHERE
+            linkFlowPath."path_item_id" = OLD."id"
+          )
+          LOOP
+            DELETE FROM "${mpTableName}"
+            WHERE "position_id" = linkFlow."position_id";
+          END LOOP;
+    
+        END IF;
       ELSE
-        -- DLWRF
-        FOR linkFlow
-        IN (
-          -- find all path items of link next
-          SELECT linkFlowPath.*
-          FROM "${mpTableName}" as linkFlowPath
-          WHERE
-          linkFlowPath."path_item_id" = OLD."id"
-        )
-        LOOP
-          DELETE FROM "${mpTableName}"
-          WHERE "position_id" = linkFlow."position_id";
-        END LOOP;
-  
       END IF;
-    ELSE
-    END IF;
+    ${iteratorDeleteEnd}
   
     -- DN
     DELETE FROM "${mpTableName}"

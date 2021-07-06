@@ -22,6 +22,12 @@ export const up = async ({
     mpTableName: MP_TABLE,
     graphTableName: GRAPH_TABLE,
     id_type: DEFAULT_ID_TYPE,
+    iteratorInsertBegin: ``,
+    iteratorInsertEnd: '',
+    groupInsert: '0',
+    iteratorDeleteBegin: ``,
+    iteratorDeleteEnd: '',
+    groupDelete: '0',
   }),
 } = {}) => {
   await api.sql(sql`
@@ -106,6 +112,12 @@ export const down = async ({
     mpTableName: MP_TABLE,
     graphTableName: GRAPH_TABLE,
     id_type: DEFAULT_ID_TYPE,
+    iteratorInsertBegin: ``,
+    iteratorInsertEnd: '',
+    groupInsert: '0',
+    iteratorDeleteBegin: ``,
+    iteratorDeleteEnd: '',
+    groupDelete: '0',
   }),
 } = {}) => {
   await api.sql(trigger.downTriggerDelete());

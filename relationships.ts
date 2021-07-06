@@ -98,6 +98,25 @@ export const up = async ({
   });
 
   await api.query({
+    type: 'create_array_relationship',
+    args: {
+      table: GRAPH_TABLE,
+      name: '_by_group',
+      using: {
+        manual_configuration: {
+          remote_table: {
+            schema: SCHEMA,
+            name: MP_TABLE,
+          },
+          column_mapping: {
+            id: 'group_id',
+          },
+        },
+      },
+    },
+  });
+
+  await api.query({
     type: 'create_object_relationship',
     args: {
       table: MP_TABLE,
@@ -212,6 +231,25 @@ export const up = async ({
   });
 
   await api.query({
+    type: 'create_object_relationship',
+    args: {
+      table: MP_TABLE,
+      name: 'by_group',
+      using: {
+        manual_configuration: {
+          remote_table: {
+            schema: SCHEMA,
+            name: GRAPH_TABLE,
+          },
+          column_mapping: {
+            group_id: 'id',
+          },
+        },
+      },
+    },
+  });
+
+  await api.query({
     type: 'create_array_relationship',
     args: {
       table: MP_TABLE,
@@ -258,6 +296,13 @@ export const down = async ({
   await api.query({
     type: 'drop_relationship',
     args: {
+      table: GRAPH_TABLE,
+      relationship: '_by_group',
+    },
+  });
+  await api.query({
+    type: 'drop_relationship',
+    args: {
       table: MP_TABLE,
       relationship: 'item',
     },
@@ -295,6 +340,13 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'by_position',
+    },
+  });
+  await api.query({
+    type: 'drop_relationship',
+    args: {
+      table: MP_TABLE,
+      relationship: 'by_group',
     },
   });
   await api.query({
