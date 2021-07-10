@@ -10,6 +10,8 @@ export interface IOptions {
   iteratorInsertDeclare?: string;
   iteratorInsertBegin?: string;
   iteratorInsertEnd?: string;
+  iteratorDeleteArgumentSend?: string;
+  iteratorDeleteArgumentGet?: string;
   iteratorDeleteDeclare?: string;
   iteratorDeleteBegin?: string;
   iteratorDeleteEnd?: string;
@@ -27,6 +29,8 @@ export const Trigger = ({
   iteratorInsertDeclare = '',
   iteratorInsertBegin = '',
   iteratorInsertEnd = '',
+  iteratorDeleteArgumentSend = '',
+  iteratorDeleteArgumentGet = '',
   iteratorDeleteDeclare = '',
   iteratorDeleteBegin = '',
   iteratorDeleteEnd = '',
@@ -51,9 +55,12 @@ export const Trigger = ({
   END;
   $$ LANGUAGE plpgsql;`,
   
-  downFunctionInsertNode: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__insert_node__function;`,
-  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_node__function()
-  RETURNS TRIGGER AS $trigger$
+  downFunctionInsertNode: () => sql`
+    DROP FUNCTION IF EXISTS ${mpTableName}__insert_node__function;
+    DROP FUNCTION IF EXISTS ${mpTableName}__insert_node__function_core;
+  `,
+  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_node__function_core(NEW RECORD)
+  RETURNS VOID AS $trigger$
   DECLARE
     fromFlow RECORD;
     toFlow RECORD;
@@ -260,6 +267,12 @@ export const Trigger = ({
         (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert});
       END IF;
     ${iteratorInsertEnd}
+  END;
+  $trigger$ LANGUAGE plpgsql;
+  CREATE OR REPLACE FUNCTION ${mpTableName}__insert_node__function()
+  RETURNS TRIGGER AS $trigger$
+  BEGIN
+    PERFORM ${mpTableName}__insert_node__function_core(NEW);
     RETURN NEW;
   END;
   $trigger$ LANGUAGE plpgsql;`,
@@ -280,88 +293,98 @@ export const Trigger = ({
   END;
   $$ LANGUAGE plpgsql;`,
   
-  downFunctionDeleteNode: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__delete_node__function;`,
-  upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__delete_node__function()
-  RETURNS TRIGGER AS $trigger$
+  downFunctionDeleteNode: () => sql`
+    DROP FUNCTION IF EXISTS ${mpTableName}__delete_node__function;
+    DROP FUNCTION IF EXISTS ${mpTableName}__delete_node__function_core;
+  `,
+  upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__delete_node__function_core(OLD RECORD${iteratorDeleteArgumentGet ? `,${iteratorDeleteArgumentGet}` : ''})
+  RETURNS VOID AS $trigger$
   DECLARE
     linkFlow RECORD;
     nodesFlow RECORD;
-    ${iteratorDeleteDeclare}
   BEGIN
-    ${iteratorDeleteBegin}
-      IF ((OLD."${from_field}" IS NOT NULL AND OLD."${from_field}" != 0) OR (OLD."${to_field}" IS NOT NULL AND OLD."${to_field}" != 0))
+    IF ((OLD."${from_field}" IS NOT NULL AND OLD."${from_field}" != 0) OR (OLD."${to_field}" IS NOT NULL AND OLD."${to_field}" != 0))
+    THEN
+      -- DL
+      IF (SELECT * FROM ${mpTableName}__will_root(OLD."${to_field}", OLD."id"))
       THEN
-        -- DL
-        IF (SELECT * FROM ${mpTableName}__will_root(OLD."${to_field}", OLD."id"))
-        THEN
-          -- DLWRF
-          FOR nodesFlow
-          IN (
-            -- find all nodes of link flows next
-            SELECT
-            DISTINCT ON (nodesFlowPath."item_id") nodesFlowPath."item_id",
-            nodesFlowPath."id",
-            nodesFlowPath."path_item_id",
-            nodesFlowPath."path_item_depth",
-            nodesFlowPath."root_id",
-            nodesFlowPath."position_id",
-            nodesFlowPath."group_id"
-            FROM "${mpTableName}" as nodesFlowPath
-            WHERE
-            nodesFlowPath."path_item_id" = OLD."id" AND
-            nodesFlowPath."group_id" = ${groupDelete}
-          )
-          LOOP
-            DELETE FROM "${mpTableName}"
-            WHERE
-            "position_id" = nodesFlow."position_id" AND
-            "path_item_depth" <= nodesFlow."path_item_depth";
-    
-            UPDATE "${mpTableName}"
-            SET
-            "path_item_depth" = "path_item_depth" - (nodesFlow."path_item_depth" + 1),
-            "root_id" = OLD."${to_field}"
-            WHERE "position_id" = nodesFlow."position_id";
-          END LOOP;
-    
-          -- DLWRF
-          FOR linkFlow
-          IN (
-            -- find all path items of link next
-            SELECT linkFlowPath.*
-            FROM "${mpTableName}" as linkFlowPath
-            WHERE
-            linkFlowPath."path_item_id" = OLD."id"
-          )
-          LOOP
-            DELETE FROM "${mpTableName}"
-            WHERE "position_id" = linkFlow."position_id";
-          END LOOP;
-    
-        ELSE
-          -- DLWRF
-          FOR linkFlow
-          IN (
-            -- find all path items of link next
-            SELECT linkFlowPath.*
-            FROM "${mpTableName}" as linkFlowPath
-            WHERE
-            linkFlowPath."path_item_id" = OLD."id"
-          )
-          LOOP
-            DELETE FROM "${mpTableName}"
-            WHERE "position_id" = linkFlow."position_id";
-          END LOOP;
-    
-        END IF;
+        -- DLWRF
+        FOR nodesFlow
+        IN (
+          -- find all nodes of link flows next
+          SELECT
+          DISTINCT ON (nodesFlowPath."item_id") nodesFlowPath."item_id",
+          nodesFlowPath."id",
+          nodesFlowPath."path_item_id",
+          nodesFlowPath."path_item_depth",
+          nodesFlowPath."root_id",
+          nodesFlowPath."position_id",
+          nodesFlowPath."group_id"
+          FROM "${mpTableName}" as nodesFlowPath
+          WHERE
+          nodesFlowPath."path_item_id" = OLD."id" AND
+          nodesFlowPath."group_id" = ${groupDelete}
+        )
+        LOOP
+          DELETE FROM "${mpTableName}"
+          WHERE
+          "position_id" = nodesFlow."position_id" AND
+          "path_item_depth" <= nodesFlow."path_item_depth";
+
+          UPDATE "${mpTableName}"
+          SET
+          "path_item_depth" = "path_item_depth" - (nodesFlow."path_item_depth" + 1),
+          "root_id" = OLD."${to_field}"
+          WHERE "position_id" = nodesFlow."position_id";
+        END LOOP;
+  
+        -- DLWRF
+        FOR linkFlow
+        IN (
+          -- find all path items of link next
+          SELECT linkFlowPath.*
+          FROM "${mpTableName}" as linkFlowPath
+          WHERE
+          linkFlowPath."path_item_id" = OLD."id"
+        )
+        LOOP
+          DELETE FROM "${mpTableName}"
+          WHERE "position_id" = linkFlow."position_id";
+        END LOOP;
+  
       ELSE
+        -- DLWRF
+        FOR linkFlow
+        IN (
+          -- find all path items of link next
+          SELECT linkFlowPath.*
+          FROM "${mpTableName}" as linkFlowPath
+          WHERE
+          linkFlowPath."path_item_id" = OLD."id"
+        )
+        LOOP
+          DELETE FROM "${mpTableName}"
+          WHERE "position_id" = linkFlow."position_id";
+        END LOOP;
+  
       END IF;
-    ${iteratorDeleteEnd}
+    ELSE
+    END IF;
   
     -- DN
     DELETE FROM "${mpTableName}"
     WHERE "item_id" = OLD."id";
-  
+  END;
+  $trigger$ LANGUAGE plpgsql;
+  CREATE OR REPLACE FUNCTION ${mpTableName}__delete_node__function()
+  RETURNS TRIGGER AS $trigger$
+  DECLARE
+    ${iteratorDeleteDeclare}
+  BEGIN
+    ${iteratorDeleteBegin}
+      PERFORM ${mpTableName}__delete_node__function_core(OLD${iteratorDeleteArgumentSend ? `,${iteratorDeleteArgumentSend}` : ''});
+    ${iteratorDeleteEnd}
+
     RETURN OLD;
   END;
   $trigger$ LANGUAGE plpgsql;`,
