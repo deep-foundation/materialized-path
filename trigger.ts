@@ -17,6 +17,8 @@ export interface IOptions {
   iteratorDeleteEnd?: string;
   groupInsert?: string;
   groupDelete?: string;
+  additionalFields?: string;
+  additionalData?: string;
 }
 
 export const Trigger = ({
@@ -36,6 +38,8 @@ export const Trigger = ({
   iteratorDeleteEnd = '',
   groupInsert = '',
   groupDelete = '',
+  additionalFields = '',
+  additionalData = '',
 }: IOptions) => ({
   downFunctionIsRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__is_root;`,
   upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id ${id_type}, group_id_arg ${id_type}) RETURNS boolean AS $$
@@ -90,7 +94,7 @@ export const Trigger = ({
     
             -- spread to link
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
             SELECT
             NEW."${id_field}",
             fromItemPath."path_item_id",
@@ -98,15 +102,16 @@ export const Trigger = ({
             fromItemPath."root_id",
             positionId,
             ${groupInsert}
+            ${additionalData}
             FROM "${mpTableName}" AS fromItemPath
             WHERE
             fromItemPath."item_id" = fromFlow."item_id" AND
             fromItemPath."root_id" = fromFlow."root_id";
     
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id", "group_id")
+            ("item_id","path_item_id","path_item_depth","root_id","position_id", "group_id"${additionalFields})
             VALUES
-            (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+            (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert}${additionalData});
     
             FOR toFlow
             IN (
@@ -125,7 +130,7 @@ export const Trigger = ({
     
               -- clone root flow path with move depth
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id",${additionalFields})
               SELECT
               toItemPath."item_id",
               toItemPath."path_item_id",
@@ -133,18 +138,19 @@ export const Trigger = ({
               fromFlow."root_id",
               positionId,
               ${groupInsert}
+              ${additionalData}
               FROM "${mpTableName}" AS toItemPath
               WHERE
               toItemPath."position_id" = toFlow."position_id";
     
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
               VALUES
-              (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+              (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert}${additionalData});
     
               -- fill path in moved area
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
               SELECT
               toFlow."item_id",
               fromItemPath."path_item_id",
@@ -152,6 +158,7 @@ export const Trigger = ({
               fromItemPath."root_id",
               positionId,
               ${groupInsert}
+              ${additionalData}
               FROM "${mpTableName}" AS fromItemPath
               WHERE
               fromItemPath."item_id" = fromFlow."item_id" AND
@@ -180,7 +187,7 @@ export const Trigger = ({
     
             -- spread to link
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
             SELECT
             NEW."${id_field}",
             fromItemPath."path_item_id",
@@ -188,15 +195,16 @@ export const Trigger = ({
             fromItemPath."root_id",
             positionId,
             ${groupInsert}
+            ${additionalData}
             FROM "${mpTableName}" AS fromItemPath
             WHERE
             fromItemPath."item_id" = fromFlow."item_id" AND
             fromItemPath."root_id" = fromFlow."root_id";
     
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
             VALUES
-            (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+            (NEW."${id_field}", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert}${additionalData});
     
             FOR toFlow
             IN (
@@ -221,7 +229,7 @@ export const Trigger = ({
     
               -- clone root flow path with move depzth
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
               SELECT
               toItemPath."item_id",
               toItemPath."path_item_id",
@@ -229,19 +237,20 @@ export const Trigger = ({
               fromFlow."root_id",
               positionId,
               ${groupInsert}
+              ${additionalData}
               FROM "${mpTableName}" AS toItemPath
               WHERE
               toItemPath."position_id" = toFlow."position_id" AND
               toItemPath."path_item_depth" >= toFlow."path_item_depth";
     
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
               VALUES
-              (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert});
+              (toFlow."item_id", NEW."${id_field}", fromFlow."path_item_depth" + 1, fromFlow."root_id", positionId, ${groupInsert}${additionalData});
     
               -- fill path in moved area
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
               SELECT
               toFlow."item_id",
               fromItemPath."path_item_id",
@@ -249,6 +258,7 @@ export const Trigger = ({
               fromItemPath."root_id",
               positionId,
               ${groupInsert}
+              ${additionalData}
               FROM "${mpTableName}" AS fromItemPath
               WHERE
               fromItemPath."item_id" = fromFlow."item_id" AND
@@ -262,9 +272,9 @@ export const Trigger = ({
         -- INR
         -- INRR
         INSERT INTO "${mpTableName}"
-        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id")
+        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
         VALUES
-        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert});
+        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert}${additionalData});
       END IF;
     ${iteratorInsertEnd}
   END;
