@@ -130,7 +130,7 @@ export const Trigger = ({
     
               -- clone root flow path with move depth
               INSERT INTO "${mpTableName}"
-              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id",${additionalFields})
+              ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
               SELECT
               toItemPath."item_id",
               toItemPath."path_item_id",

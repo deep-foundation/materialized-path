@@ -1,6 +1,6 @@
 {
   "name": "@deepcase/materialized-path",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "ISC",
   "author": "Ivan S Glazunov <ivansglazunov@gmail.com>",
   "homepage": "https://github.com/deepcase/materialized-path",
