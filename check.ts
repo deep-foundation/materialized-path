@@ -13,7 +13,7 @@ const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 export const fetch = async (type_id: number, idType: string = ID_TYPE) => {
   const result = await client.query({ query: gql`query FETCH($type_id: ${idType}) {
     mp: ${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { id item_id path_item_depth path_item_id root_id position_id by_position(order_by: { path_item_depth: asc }) { id item_id path_item_depth path_item_id root_id position_id } }
-    nodes(where: { type_id: { _eq: $type_id } }) { from_id id to_id type_id in { from_id id to_id type_id } out { from_id id to_id type_id } }
+    nodes: ${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { from_id id to_id type_id in { from_id id to_id type_id } out { from_id id to_id type_id } }
   }`, variables: { type_id } });
   return { nodes: result?.data?.nodes || [], mp: result?.data?.mp || [] };
 };
@@ -40,6 +40,9 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
     valid = false;
     debug(...args);
   };
+
+  if (!nodes.length) invalid(`nodes not fetched`);
+
   const nodesChecked: { [id: number]: boolean; } = {};
   const markersChecked: { [id: number]: boolean; } = {};
   const checkNode = (node: Node) => {

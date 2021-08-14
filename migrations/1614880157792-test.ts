@@ -45,6 +45,42 @@ export const up = async ({
     },
   });
   await api.query({
+    type: 'create_array_relationship',
+    args: {
+      table: GRAPH_TABLE,
+      name: 'in',
+      using: {
+        manual_configuration: {
+          remote_table: {
+            schema: SCHEMA,
+            name: GRAPH_TABLE,
+          },
+          column_mapping: {
+            id: 'to_id',
+          },
+        },
+      },
+    },
+  });
+  await api.query({
+    type: 'create_array_relationship',
+    args: {
+      table: GRAPH_TABLE,
+      name: 'out',
+      using: {
+        manual_configuration: {
+          remote_table: {
+            schema: SCHEMA,
+            name: GRAPH_TABLE,
+          },
+          column_mapping: {
+            id: 'from_id',
+          },
+        },
+      },
+    },
+  });
+  await api.query({
     type: 'create_select_permission',
     args: {
       table: GRAPH_TABLE,
