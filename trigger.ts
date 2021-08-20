@@ -233,7 +233,10 @@ export const Trigger = ({
     FROM
     "${graphTableName}"
     WHERE
-    "${to_field}" = node_id AND
+    (
+      "${to_field}" = node_id OR
+      ("${from_field}" != 0 AND "${from_field}" IS NOT NULL AND "${id_field}" = node_id)
+    ) AND
     "id" != link_id
     LIMIT 1;
     RETURN result;
@@ -253,54 +256,71 @@ export const Trigger = ({
   BEGIN
     IF ((OLD."${from_field}" IS NOT NULL AND OLD."${from_field}" != 0) OR (OLD."${to_field}" IS NOT NULL AND OLD."${to_field}" != 0))
     THEN
-      IF (SELECT * FROM ${mpTableName}__will_root(OLD."${to_field}", OLD."id"))
-      THEN
-        SELECT inFromItems.* INTO inFromFlow
-        FROM "${mpTableName}" as inFromItems
+      FOR toOutItems
+      IN (
+        SELECT toOutFlowItem.*
+        FROM "${graphTableName}" as toOutFlowLink, "${mpTableName}" as toOutFlowItem
         WHERE
-        "item_id" = OLD."${id_field}" AND
-        "path_item_id" = OLD."${id_field}" AND
-        "group_id" = ${groupDelete} LIMIT 1;
-
-        UPDATE "${mpTableName}"
-        SET
-        "path_item_depth" = "path_item_depth" - (inFromFlow."path_item_depth" + 1),
-        "root_id" = OLD."${to_field}"
-        WHERE
-        "id" IN (
-          SELECT toUpdate."id"
-          FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toUpdate
-          WHERE
-          toOutDown."path_item_id" = inFromFlow."path_item_id" AND
-          toUpdate."position_id" = toOutDown."position_id"
-        );
-
-        DELETE FROM "${mpTableName}"
-        WHERE
-        "id" IN (
-          SELECT toDelete."id"
-          FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toDelete
-          WHERE
-          toOutDown."path_item_id" = inFromFlow."path_item_id" AND
-          toDelete."position_id" = toOutDown."position_id" AND
-          toDelete."path_item_depth" < 0
-        );
-      ELSE
-        -- DLWRF
-        FOR linkFlow
-        IN (
-          -- find all path items of link next
-          SELECT linkFlowPath.*
-          FROM "${mpTableName}" as linkFlowPath
-          WHERE
-          linkFlowPath."path_item_id" = OLD."id"
+        (
+          toOutFlowLink."${id_field}" = OLD."${to_field}" AND
+          toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
+          toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
+          toOutFlowItem."group_id" = ${groupInsert}
+        ) OR (
+          toOutFlowLink."${to_field}" = OLD."${id_field}" AND
+          toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
+          toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
+          toOutFlowItem."group_id" = ${groupInsert}
         )
-        LOOP
+      )
+      LOOP
+        IF (SELECT * FROM ${mpTableName}__will_root(toOutItems."path_item_id", OLD."id"))
+        THEN
+          SELECT inFromItems.* INTO inFromFlow
+          FROM "${mpTableName}" as inFromItems
+          WHERE
+          "item_id" = toOutItems."path_item_id" AND
+          "path_item_id" = toOutItems."path_item_id" AND
+          "group_id" = ${groupDelete} LIMIT 1;
+
+          UPDATE "${mpTableName}"
+          SET
+          "path_item_depth" = "path_item_depth" - (inFromFlow."path_item_depth"),
+          "root_id" = toOutItems."path_item_id"
+          WHERE
+          "id" IN (
+            SELECT toUpdate."id"
+            FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toUpdate
+            WHERE
+            toOutDown."path_item_id" = inFromFlow."path_item_id" AND
+            toUpdate."position_id" = toOutDown."position_id"
+          );
+
           DELETE FROM "${mpTableName}"
-          WHERE "position_id" = linkFlow."position_id";
-        END LOOP;
-  
-      END IF;
+          WHERE
+          "id" IN (
+            SELECT toDelete."id"
+            FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toDelete
+            WHERE
+            toOutDown."path_item_id" = inFromFlow."path_item_id" AND
+            toOutDown."group_id" = ${groupDelete} AND
+            toDelete."position_id" = toOutDown."position_id" AND
+            toDelete."path_item_depth" < 0 AND
+            toDelete."group_id" = ${groupDelete}
+          );
+        ELSE
+          DELETE FROM "${mpTableName}"
+          WHERE
+          "id" IN (
+            SELECT toDelete."id"
+            FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toDelete
+            WHERE
+            toOutDown."path_item_id" = OLD."${id_field}" AND
+            toOutDown."group_id" = ${groupDelete} AND
+            toDelete."position_id" = toOutDown."position_id"
+          );
+        END IF;
+      END LOOP;
     ELSE
     END IF;
   
