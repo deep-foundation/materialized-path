@@ -130,11 +130,13 @@ const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
 let type_id;
 
 beforeAll(async () => {
+  await clear(type_id);
+  await deleteNode(type_id);
   jest.setTimeout(1000000);
 }); 
 afterAll(async () => {
-  await clear(type_id);
-  await deleteNode(type_id);
+  // await clear(type_id);
+  // await deleteNode(type_id);
 });
 it('prepare', async () => {
   const ids = await insertNodes({});
