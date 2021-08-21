@@ -3,7 +3,7 @@ require('dotenv').config();
 import Debug from 'debug';
 import { gql } from 'apollo-boost';
 import Chance from 'chance';
-import { check } from './check';
+import { check, checkManual } from './check';
 import { client } from './client';
 
 const chance = new Chance();
@@ -270,7 +270,7 @@ it('-7', async () => {
   await check({ a, b, c, d, e, y }, type_id);
 });
 itDelay();
-it('tree', async () => {
+it.skip('tree', async () => {
   await clear(type_id);
   const a = await insertNode(type_id);
   const { array } = generateTree(a, 100);
@@ -280,7 +280,7 @@ it('tree', async () => {
   await check({ a, ...ns }, type_id);
 });
 itDelay();
-it('multiparental tree', async () => {
+it.skip('multiparental tree', async () => {
   await clear(type_id);
   const a = await insertNode(type_id);
   const { array } = generateTree(a, 500);
@@ -289,4 +289,111 @@ it('multiparental tree', async () => {
   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
   await generateMultiparentalTree(array, ns, 20);
   await check({ a, ...ns }, type_id);
+});
+it('8', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+2;
+  const b = w+3;
+  const c = await insertLink(a, b, type_id);
+  await check({ w }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [c,a,b,type_id,[[c,c]]],
+  ], type_id);
+  await insertNode(type_id);
+  await insertNode(type_id);
+});
+it('9', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+2;
+  const b = w+3;
+  const c = await insertLink(a, b, type_id);
+  await insertNode(type_id);
+  await check({ w, c, a }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [a,0,0,type_id,[[a,a]]],
+  ], type_id);
+  await insertNode(type_id);
+});
+it('10', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+3;
+  const b = w+2;
+  const c = await insertLink(a, b, type_id);
+  await insertNode(type_id);
+  await check({ w, c, b }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [c,a,b,type_id,[[c,c]]],
+    [b,0,0,type_id,[[c,c],[c,b]]],
+  ], type_id);
+  await insertNode(type_id);
+});
+it('11', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+3;
+  const b = w+2;
+  const c = await insertLink(a, b, type_id);
+  await insertNode(type_id);
+  await insertNode(type_id);
+  await check({ w, c, b, a }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
+    [a,0,0,type_id,[[a,a]]],
+  ], type_id);
+});
+it('12', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+2;
+  const b = w+3;
+  const c = await insertLink(a, b, type_id);
+  await insertNode(type_id);
+  await insertNode(type_id);
+  await deleteNode(a);
+  await check({ w, c, b, a }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [c,a,b,type_id,[[c,c]]],
+    [b,0,0,type_id,[[c,c], [c,b]]],
+  ], type_id);
+});
+it('13', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+2;
+  const b = w+3;
+  const c = await insertLink(a, b, type_id);
+  await insertNode(type_id);
+  await insertNode(type_id);
+  await deleteNode(a);
+  await deleteNode(b);
+  await check({ w, c, b, a }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [c,a,b,type_id,[[c,c]]],
+  ], type_id);
+});
+it('14', async () => {
+  await clear(type_id);
+  const w = await insertNode(type_id);
+  const a = w+3;
+  const b = w+2;
+  const c = await insertLink(a, b, type_id);
+  await insertNode(type_id);
+  await deleteNode(c);
+  await check({ w, c, b }, type_id);
+  checkManual([
+    [w,0,0,type_id,[[w,w]]],
+    [b,0,0,type_id,[[b,b]]],
+  ], type_id);
+  await insertNode(type_id);
 });

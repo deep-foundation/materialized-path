@@ -2,6 +2,7 @@ import { client } from './client';
 import Debug from 'debug';
 import { gql } from 'apollo-boost';
 import forEach from 'lodash/forEach';
+import assert from 'assert';
 
 const debug = Debug('deepcase:materialized-path:check');
 
@@ -87,4 +88,21 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
     if (!markersChecked[marker.id]) invalid(`invalid marker #${marker.id} of node #${n[marker.item_id]} ${n[marker.root_id]}[...${n[marker.path_item_id]}...]`);
   });
   if (!valid) throw new Error('invalid');
+
+  return { nodes, mp };
 };
+
+export const checkManual = async (links: [number, number, number, number, [number, number][]][], type_id: number) => {
+  const { nodes, mp } = await fetch(type_id);
+
+  const ns = [];
+  const ls = [];
+
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    const l = links[i];
+    ns.push({ id: n.id, from_id: n.from_id || 0, to_id: n.to_id || 0, type_id: n.type_id || 0, _by_item: mp.filter(mp => mp.item_id === n.id).map(a => ({ root_id: a.root_id, path_item_id: a.path_item_id })) });
+    ls.push({ id: l[0], from_id: l[1], to_id: l[2], type_id: l[3], _by_item: l[4].map(a => ({ root_id: a[0], path_item_id: a[1] })) });
+  }
+  assert.deepStrictEqual(ns, ls);
+}
