@@ -145,7 +145,7 @@ export const Trigger = ({
         WHERE
         currentFlowItem."item_id" = NEW."${id_field}" AND
         currentFlowItem."path_item_id" = NEW."${id_field}" AND
-        currentFlowItem."group_id" = 0
+        currentFlowItem."group_id" = ${groupInsert}
       )
       LOOP
         FOR toOutFlow
@@ -167,6 +167,7 @@ export const Trigger = ({
           )
         )
         LOOP
+            
           SELECT gen_random_uuid() INTO positionId;
 
           -- ILSN
