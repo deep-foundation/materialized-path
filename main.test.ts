@@ -184,6 +184,13 @@ it('+3', async () => {
   const d = await insertNode(type_id);
   const e = await insertLink(b, d, type_id);
   await check({ a, b, c, d, e }, type_id);
+  checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [d,0,0,type_id,[[a,a],[a,c],[a,b],[a,e],[a,d]]],
+    [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
+  ], type_id);
 });
 itDelay();
 it('-3', async () => {
@@ -195,6 +202,12 @@ it('-3', async () => {
   const e = await insertLink(b, d, type_id);
   await deleteNode(e);
   await check({ a, b, c, d, e }, type_id);
+  checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [d,0,0,type_id,[[d,d]]],
+  ], type_id);
 });
 itDelay();
 it('+4', async () => {
@@ -396,4 +409,23 @@ it('14', async () => {
     [b,0,0,type_id,[[b,b]]],
   ], type_id);
   await insertNode(type_id);
+});
+it('deeplinks demo tree', async () => {
+  await clear(type_id);
+  const n0 = await insertNode(type_id);
+  const n1 = await insertNode(type_id);
+  const n2 = await insertNode(type_id);
+  const n3 = await insertNode(type_id);
+  const n4 = await insertNode(type_id);
+  const n5 = await insertNode(type_id);
+  const n6 = await insertNode(type_id);
+  const l0 = await insertLink(n0, n1, type_id);
+  const l1 = await insertLink(n0, n2, type_id);
+  const l2 = await insertLink(n1, n3, type_id);
+  const l3 = await insertLink(n1, n4, type_id);
+  const l4 = await insertLink(n2, n5, type_id);
+  const l5 = await insertLink(n2, n6, type_id);
+  await check({
+    n0, n1, n2, n3, n4, n5, n6, l0, l1, l2, l3, l4, l5,
+  }, type_id);
 });
