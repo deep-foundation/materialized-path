@@ -1,6 +1,6 @@
 {
   "name": "@deepcase/materialized-path",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "license": "ISC",
   "author": "Ivan S Glazunov <ivansglazunov@gmail.com>",
   "homepage": "https://github.com/deepcase/materialized-path",
@@ -13,7 +13,7 @@
   ],
   "description": "",
   "dependencies": {
-    "@deepcase/hasura": "^0.0.13",
+    "@deepcase/hasura": "^0.0.14",
     "@types/jest": "^26.0.22",
     "@types/node": "^14.0.23",
     "@types/react": "^17.0.2",
