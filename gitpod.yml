@@ -11,4 +11,4 @@ vscode:
     - ms-azuretools.vscode-docker
 
 tasks:
-  - init: npm run gitpod-prepare; gp open readme.md; npm ci; npm run hasura; npm run migrate; npm run test;
+  - init: npm run gitpod-prepare; gp open readme.md; npm ci; npm run hasura; sleep 10; npm run migrate; npm run test;
