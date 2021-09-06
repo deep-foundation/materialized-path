@@ -1,6 +1,6 @@
 {
   "name": "@deepcase/materialized-path",
-  "version": "0.0.14",
+  "version": "0.0.16",
   "license": "ISC",
   "author": "Ivan S Glazunov <ivansglazunov@gmail.com>",
   "homepage": "https://github.com/deepcase/materialized-path",
@@ -8,28 +8,29 @@
     "type": "git",
     "url": "ssh://git@github.com/deepcase/materialized-path.git"
   },
-  "pre-commit": [
-    "build"
-  ],
   "description": "",
   "dependencies": {
-    "@deepcase/hasura": "^0.0.14",
+    "@deepcase/hasura": "0.0.14",
     "@types/jest": "^26.0.22",
     "@types/node": "^14.0.23",
     "@types/react": "^17.0.2",
     "chance": "^1.1.7",
+    "graphql": "^15.5.3",
     "ts-jest": "^26.5.4",
     "typescript": "^3.9.7"
   },
   "scripts": {
+    "gitpod-prepare": "(yes | sudo apt install screen); (yes | sudo apt install rsync); (yes | sudo apt install net-tools); screen -S docker -d -m sudo docker-up",
     "package:build": "npx tsc --project tsconfig.json && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
     "package:unbuild": "rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
     "package:publish": "npm run package:build; npm publish --access public; npm run package:unbuild",
-    "test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; DEBUG='deepcase:*' npx jest",
+    "test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; DEBUG='deepcase:*' jest",
     "migrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate up --compiler='ts:@deepcase/hasura/compiler/index.js'",
-    "unmigrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate down --compiler='ts:@deepcase/hasura/compiler/index.js'"
+    "unmigrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate down --compiler='ts:@deepcase/hasura/compiler/index.js'",
+    "hasura": "(export JWT_SECRET='{\"type\":\"HS256\", \"key\": \"3EK6FD+o0+c7tzBNVfjpMkNDi2yARAAKzQlk8O2IKoxQu4nF7EdAh8s3TwpHwrdWT6R\"}'; cd node_modules/@deepcase/hasura; screen -S hasura -d -m npm run docker)"
   },
   "devDependencies": {
-    "pre-commit": "^1.2.2"
+    "jest": "^26.6.3",
+    "ts-node": "^10.2.1"
   }
 }
