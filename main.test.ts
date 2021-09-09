@@ -5,7 +5,6 @@ import { gql } from 'apollo-boost';
 import Chance from 'chance';
 import { check, checkManual } from './check';
 import { client } from './client';
-import fs from 'fs';
 
 const chance = new Chance();
 const debug = Debug('deepcase:materialized-path:test');
@@ -347,19 +346,17 @@ it('tree', async () => {
   await check({ a, ...ns }, type_id);
 });
 itDelay();
-// it('multiparental tree', async () => {
-//   debug('multiparental tree');
-//   await clear(type_id);
-//   fs.writeFileSync('./temp.json', '[]');
-//   const a = await insertNode(type_id);
-//   const { array } = generateTree(a, 100);
-//   const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
-//   ids.forEach((id) => addLink({ id, type_id, from_id: 0, to_id: 0 }));
-//   const ns = {};
-//   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
-//   await generateMultiparentalTree(array, ns, 30);
-//   await check({ a, ...ns }, type_id);
-// });
+it('multiparental tree', async () => {
+  debug('multiparental tree');
+  await clear(type_id);
+  const a = await insertNode(type_id);
+  const { array } = generateTree(a, 100);
+  const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
+  const ns = {};
+  for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
+  await generateMultiparentalTree(array, ns, 30);
+  await check({ a, ...ns }, type_id);
+});
 it('8', async () => {
   debug('8');
   await clear(type_id);
