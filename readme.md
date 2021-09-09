@@ -17,8 +17,8 @@
   MIGRATIONS_HASURA_SECRET='myadminsecretkey'
 
   MIGRATIONS_SCHEMA='public'
-  MIGRATIONS_MP_TABLE='mp_example__nodes__mp'
-  MIGRATIONS_GRAPH_TABLE='mp_example__nodes'
+  MIGRATIONS_MP_TABLE='mp_example__links__mp'
+  MIGRATIONS_GRAPH_TABLE='mp_example__links'
   MIGRATIONS_ID_TYPE_GQL='Int'
   MIGRATIONS_ID_TYPE_SQL='integer'
   ```

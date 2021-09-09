@@ -5,13 +5,14 @@ import { gql } from 'apollo-boost';
 import Chance from 'chance';
 import { check, checkManual } from './check';
 import { client } from './client';
+import fs from 'fs';
 
 const chance = new Chance();
 const debug = Debug('deepcase:materialized-path:test');
 
 const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
-const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
-const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
+const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
 const DELAY = +process.env.DELAY || 0;
@@ -27,47 +28,62 @@ const itDelay = () => {
 
 const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertNode($type_id: ${idType}) {
-    insert_nodes: insert_${GRAPH_TABLE}(objects: { type_id: $type_id }) { returning { id } }
+    insert_links: insert_${GRAPH_TABLE}(objects: { type_id: $type_id }) { returning { id } }
   }`, variables: { type_id } });
-  if (result?.errors) throw result?.errors;
-  const id = result?.data?.insert_nodes?.returning?.[0]?.id;
+  if (result?.errors) {
+    throw result?.errors;
+    console.error(result?.errors);
+  }
+  const id = result?.data?.insert_links?.returning?.[0]?.id;
   debug(`insert node #${id}`);
   return id;
 };
 const insertNodes = async (nodes) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertNodes($objects: [${GRAPH_TABLE}_insert_input!]!) {
-    insert_nodes: insert_${GRAPH_TABLE}(objects: $objects) { returning { id } }
+    insert_links: insert_${GRAPH_TABLE}(objects: $objects) { returning { id } }
   }`, variables: { objects: nodes } });
-  if (result?.errors) throw result?.errors;
-  const returning = result?.data?.insert_nodes?.returning || [];
+  if (result?.errors) {
+    throw result?.errors;
+    console.error(result?.errors);
+  }
+  const returning = result?.data?.insert_links?.returning || [];
   const ids = returning.map(({id}) => id);
   debug(`insert nodes ${ids.length}`);
   return ids;
 };
 const insertLink = async (fromId: number, toId: number, type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertLink($fromId: ${idType}, $toId: ${idType}, $type_id: ${idType}) {
-    insert_nodes: insert_${GRAPH_TABLE}(objects: { from_id: $fromId, to_id: $toId, type_id: $type_id }) { returning { id } }
+    insert_links: insert_${GRAPH_TABLE}(objects: { from_id: $fromId, to_id: $toId, type_id: $type_id }) { returning { id } }
   }`, variables: { fromId, toId, type_id } });
-  if (result?.errors) throw result?.errors;
-  const id = result?.data?.insert_nodes?.returning?.[0]?.id;
+  if (result?.errors) {
+    throw result?.errors;
+    console.error(result?.errors);
+  }
+  const id = result?.data?.insert_links?.returning?.[0]?.id;
   debug(`insert link #${id} (#${fromId} -> #${toId})`);
   return id;
 };
 const clear = async (type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation Clear($type_id: ${idType}) {
-    delete_nodes__mp: delete_${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { affected_rows }
-    delete_nodes: delete_${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { affected_rows }
+    delete_links__mp: delete_${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { affected_rows }
+    delete_links: delete_${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { affected_rows }
   }`, variables: { type_id } });
-  if (result?.errors) throw result?.errors;
+  if (result?.errors) {
+    throw result?.errors;
+    console.error(result?.errors);
+  }
   debug(`clear type_id #${type_id}`);
 };
 const deleteNode = async (id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation DeleteNode($id: ${idType}) {
-    delete_nodes: delete_${GRAPH_TABLE}(where: { id: { _eq: $id } }) { returning { id } }
+    delete_links: delete_${GRAPH_TABLE}(where: { id: { _eq: $id } }) { returning { id } }
   }`, variables: { id } });
-  if (result?.errors) throw result?.errors;
+  if (result?.errors) {
+    throw result?.errors;
+    console.error(result?.errors);
+  }
   debug(`delete node #${id}`);
-  return result?.data?.delete_nodes?.returning?.[0]?.id;
+  return result?.data?.delete_links?.returning?.[0]?.id;
 };
 
 const generateTree = (initialId, count = 1000) => {
@@ -138,13 +154,14 @@ afterAll(async () => {
   // await clear(type_id);
   // await deleteNode(type_id);
 });
-it('prepare', async () => {
+(it)('prepare', async () => {
   const ids = await insertNodes({});
   type_id = ids[0];
   debug('prepare', ids);
 });
 
 it('+1', async () => {
+  debug('+1');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -152,6 +169,7 @@ it('+1', async () => {
 });
 itDelay();
 it('-1', async () => {
+  debug('-1');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -160,6 +178,7 @@ it('-1', async () => {
 });
 itDelay();
 it('+2', async () => {
+  debug('+2');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -168,6 +187,7 @@ it('+2', async () => {
 });
 itDelay();
 it('-2', async () => {
+  debug('-2');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -177,6 +197,7 @@ it('-2', async () => {
 });
 itDelay();
 it('+3', async () => {
+  debug('+3');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -184,7 +205,7 @@ it('+3', async () => {
   const d = await insertNode(type_id);
   const e = await insertLink(b, d, type_id);
   await check({ a, b, c, d, e }, type_id);
-  checkManual([
+  await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
@@ -194,6 +215,7 @@ it('+3', async () => {
 });
 itDelay();
 it('-3', async () => {
+  debug('-3');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -202,7 +224,7 @@ it('-3', async () => {
   const e = await insertLink(b, d, type_id);
   await deleteNode(e);
   await check({ a, b, c, d, e }, type_id);
-  checkManual([
+  await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
@@ -211,6 +233,7 @@ it('-3', async () => {
 });
 itDelay();
 it('+4', async () => {
+  debug('+4');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -223,6 +246,7 @@ it('+4', async () => {
 });
 itDelay();
 it('-4', async () => {
+  debug('-4');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -233,9 +257,18 @@ it('-4', async () => {
   const y = await insertLink(x, a, type_id);
   await deleteNode(y);
   await check({ a, b, c, d, e, x, y }, type_id);
+  await checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [d,0,0,type_id,[[a,a],[a,c],[a,b],[a,e],[a,d]]],
+    [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
+    [x,0,0,type_id,[[x,x]]],
+  ], type_id);
 });
 itDelay();
 it('+5', async () => {
+  debug('+5');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -245,9 +278,19 @@ it('+5', async () => {
   const x = await insertNode(type_id);
   const y = await insertLink(x, b, type_id);
   await check({ a, b, c, d, e, x, y }, type_id);
+  await checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b],[x,x],[x,y],[x,b]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [d,0,0,type_id,[[a,a],[a,c],[a,b],[a,e],[a,d],[x,x],[x,y],[x,b],[x,e],[x,d]]],
+    [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e],[x,x],[x,y],[x,b],[x,e]]],
+    [x,0,0,type_id,[[x,x]]],
+    [y,x,b,type_id,[[x,x],[x,y]]],
+  ], type_id);
 });
 itDelay();
 it('-5', async () => {
+  debug('-5');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -258,9 +301,18 @@ it('-5', async () => {
   const y = await insertLink(x, b, type_id);
   await deleteNode(y);
   await check({ a, b, c, d, e, x, y }, type_id);
+  await checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+    [d,0,0,type_id,[[a,a],[a,c],[a,b],[a,e],[a,d]]],
+    [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
+    [x,0,0,type_id,[[x,x]]],
+  ], type_id);
 });
 itDelay();
 it('+7', async () => {
+  debug('+7');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -272,6 +324,7 @@ it('+7', async () => {
 });
 itDelay();
 it('-7', async () => {
+  debug('-7');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -284,6 +337,7 @@ it('-7', async () => {
 });
 itDelay();
 it('tree', async () => {
+  debug('tree');
   await clear(type_id);
   const a = await insertNode(type_id);
   const { array } = generateTree(a, 100);
@@ -293,24 +347,28 @@ it('tree', async () => {
   await check({ a, ...ns }, type_id);
 });
 itDelay();
-it('multiparental tree', async () => {
-  await clear(type_id);
-  const a = await insertNode(type_id);
-  const { array } = generateTree(a, 100);
-  const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
-  const ns = {};
-  for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
-  await generateMultiparentalTree(array, ns, 20);
-  await check({ a, ...ns }, type_id);
-});
+// it('multiparental tree', async () => {
+//   debug('multiparental tree');
+//   await clear(type_id);
+//   fs.writeFileSync('./temp.json', '[]');
+//   const a = await insertNode(type_id);
+//   const { array } = generateTree(a, 100);
+//   const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
+//   ids.forEach((id) => addLink({ id, type_id, from_id: 0, to_id: 0 }));
+//   const ns = {};
+//   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
+//   await generateMultiparentalTree(array, ns, 30);
+//   await check({ a, ...ns }, type_id);
+// });
 it('8', async () => {
+  debug('8');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+2;
   const b = w+3;
   const c = await insertLink(a, b, type_id);
   await check({ w }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
   ], type_id);
@@ -318,6 +376,7 @@ it('8', async () => {
   await insertNode(type_id);
 });
 it('9', async () => {
+  debug('9');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+2;
@@ -325,7 +384,7 @@ it('9', async () => {
   const c = await insertLink(a, b, type_id);
   await insertNode(type_id);
   await check({ w, c, a }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
     [a,0,0,type_id,[[a,a]]],
@@ -333,6 +392,7 @@ it('9', async () => {
   await insertNode(type_id);
 });
 it('10', async () => {
+  debug('10');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+3;
@@ -340,7 +400,7 @@ it('10', async () => {
   const c = await insertLink(a, b, type_id);
   await insertNode(type_id);
   await check({ w, c, b }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
     [b,0,0,type_id,[[c,c],[c,b]]],
@@ -348,6 +408,7 @@ it('10', async () => {
   await insertNode(type_id);
 });
 it('11', async () => {
+  debug('11');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+3;
@@ -356,7 +417,7 @@ it('11', async () => {
   await insertNode(type_id);
   await insertNode(type_id);
   await check({ w, c, b, a }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
@@ -364,6 +425,7 @@ it('11', async () => {
   ], type_id);
 });
 it('12', async () => {
+  debug('12');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+2;
@@ -373,13 +435,14 @@ it('12', async () => {
   await insertNode(type_id);
   await deleteNode(a);
   await check({ w, c, b, a }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
     [b,0,0,type_id,[[c,c], [c,b]]],
   ], type_id);
 });
 it('13', async () => {
+  debug('13');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+2;
@@ -390,12 +453,13 @@ it('13', async () => {
   await deleteNode(a);
   await deleteNode(b);
   await check({ w, c, b, a }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
   ], type_id);
 });
 it('14', async () => {
+  debug('14');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+3;
@@ -404,13 +468,14 @@ it('14', async () => {
   await insertNode(type_id);
   await deleteNode(c);
   await check({ w, c, b }, type_id);
-  checkManual([
+  await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [b,0,0,type_id,[[b,b]]],
   ], type_id);
   await insertNode(type_id);
 });
 it('deeplinks demo tree', async () => {
+  debug('deeplinks demo tree');
   await clear(type_id);
   const n0 = await insertNode(type_id);
   const n1 = await insertNode(type_id);

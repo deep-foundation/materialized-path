@@ -12,8 +12,8 @@ const api = new HasuraApi({
 });
 
 const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
-const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
-const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
+const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const DEFAULT_ID_TYPE = process.env.MIGRATIONS_ID_TYPE_SQL || 'integer';
 
 export const up = async ({
@@ -134,8 +134,6 @@ export const up = async ({
     }
   });
   await upRels({ SCHEMA, MP_TABLE, GRAPH_TABLE });
-  await api.sql(trigger.upFunctionIsRoot());
-  await api.sql(trigger.upFunctionWillRoot());
   await api.sql(trigger.upFunctionInsertNode());
   await api.sql(trigger.upFunctionDeleteNode());
   await api.sql(trigger.upTriggerDelete());
@@ -160,8 +158,6 @@ export const down = async ({
   await api.sql(trigger.downTriggerInsert());
   await api.sql(trigger.downFunctionInsertNode());
   await api.sql(trigger.downFunctionDeleteNode());
-  await api.sql(trigger.downFunctionIsRoot());
-  await api.sql(trigger.downFunctionWillRoot());
   await downRels({ SCHEMA, MP_TABLE, GRAPH_TABLE });
   await downTable({ SCHEMA, MP_TABLE });
   await api.query({

@@ -22,8 +22,8 @@ export interface IOptions {
 }
 
 export const Trigger = ({
-  mpTableName = 'nodes__mp',
-  graphTableName = 'nodes',
+  mpTableName = 'links__mp',
+  graphTableName = 'links',
   id_field = 'id',
   to_field = 'to_id',
   from_field = 'from_id',
@@ -41,29 +41,11 @@ export const Trigger = ({
   additionalFields = '',
   additionalData = '',
 }: IOptions) => ({
-  downFunctionIsRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__is_root;`,
-  upFunctionIsRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__is_root(node_id ${id_type}, group_id_arg ${id_type}) RETURNS boolean AS $$
-  DECLARE result BOOLEAN;
-  BEGIN
-    SELECT COUNT("id") >= 1
-    INTO result
-    FROM
-    "${mpTableName}"
-    WHERE
-    "item_id" = node_id AND
-    "path_item_id" = node_id AND
-    "path_item_depth" = 0 AND
-    "group_id" = group_id_arg
-    LIMIT 1;
-    RETURN result;
-  END;
-  $$ LANGUAGE plpgsql;`,
-  
   downFunctionInsertNode: () => sql`
-    DROP FUNCTION IF EXISTS ${mpTableName}__insert_node__function;
-    DROP FUNCTION IF EXISTS ${mpTableName}__insert_node__function_core;
+    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function;
+    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function_core;
   `,
-  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_node__function_core(NEW RECORD)
+  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function_core(NEW RECORD)
   RETURNS VOID AS $trigger$
   DECLARE
     fromInFlow RECORD;
@@ -73,6 +55,23 @@ export const Trigger = ({
     ${iteratorInsertDeclare}
   BEGIN
     ${iteratorInsertBegin}
+      IF EXISTS (
+        SELECT * FROM "${graphTableName}" as fromInFlowLink, "${mpTableName}" as mp WHERE
+        mp."group_id" = ${groupInsert} AND
+        mp."path_item_id" = NEW."${id_field}" AND
+        (
+          (
+            fromInFlowLink."${id_field}" = NEW."${from_field}" AND
+            mp."item_id" = fromInFlowLink."${id_field}"
+          ) OR (
+            fromInFlowLink."${to_field}" = NEW."${id_field}" AND
+            mp."item_id" = fromInFlowLink."${id_field}"
+          )
+        )
+      ) THEN
+        RAISE EXCEPTION 'recursion detected for %', NEW."${id_field}"; 
+      END IF;
+
       FOR fromInFlow
       IN (
         SELECT fromInFlowItem.*
@@ -92,8 +91,6 @@ export const Trigger = ({
       )
       LOOP
         SELECT gen_random_uuid() INTO positionId;
-
-        -- ILFS
 
         INSERT INTO "${mpTableName}"
         ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
@@ -115,8 +112,6 @@ export const Trigger = ({
         (NEW."${id_field}",NEW."${id_field}",fromInFlow."path_item_depth" + 1,fromInFlow."root_id",positionId,${groupInsert}${additionalData});
       END LOOP;
 
-      -- ILFI
-
       IF (
         SELECT COUNT("id") = 0
         FROM "${mpTableName}"
@@ -126,17 +121,11 @@ export const Trigger = ({
         LIMIT 1
       )
       THEN
-        -- ILR
-        -- ILSR
-
         INSERT INTO "${mpTableName}"
         ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
         VALUES
         (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert}${additionalData});
-      ELSE
       END IF;
-
-      -- ILTO
 
       FOR currentFlow
       IN (
@@ -170,8 +159,6 @@ export const Trigger = ({
             
           SELECT gen_random_uuid() INTO positionId;
 
-          -- ILSN
-
           -- add prev flows current to to/out flow
           INSERT INTO "${mpTableName}"
           ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
@@ -196,17 +183,18 @@ export const Trigger = ({
           SELECT
           toOutItems."item_id",
           toOutItems."path_item_id",
-          toOutItems."path_item_depth" + currentFlow."path_item_depth" + 1,
+          toOutItems."path_item_depth" + currentFlow."path_item_depth" + 1 - toOutFlow."path_item_depth",
           currentFlow."root_id",
           positionId,
           ${groupInsert}
           ${additionalData}
-          FROM "${mpTableName}" AS toOutItems, "${mpTableName}" AS toOutFlowDown
+          FROM "${mpTableName}" AS toOutFlowDown, "${mpTableName}" AS toOutItems
           WHERE
           toOutFlowDown."group_id" = toOutFlow."group_id" AND
           toOutFlowDown."path_item_id" = toOutFlow."path_item_id" AND
           toOutItems."item_id" = toOutFlowDown."item_id" AND
           toOutItems."position_id" = toOutFlowDown."position_id" AND
+          toOutItems."path_item_depth" >= toOutFlow."path_item_depth" AND
           toOutItems."group_id" = toOutFlowDown."group_id";
 
           -- delete trash roots
@@ -217,37 +205,19 @@ export const Trigger = ({
     ${iteratorInsertEnd}
   END;
   $trigger$ LANGUAGE plpgsql;
-  CREATE OR REPLACE FUNCTION ${mpTableName}__insert_node__function()
+  CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function()
   RETURNS TRIGGER AS $trigger$
   BEGIN
-    PERFORM ${mpTableName}__insert_node__function_core(NEW);
+    PERFORM ${mpTableName}__insert_link__function_core(NEW);
     RETURN NEW;
   END;
   $trigger$ LANGUAGE plpgsql;`,
   
-  downFunctionWillRoot: () => sql`DROP FUNCTION IF EXISTS ${mpTableName}__will_root;`,
-  upFunctionWillRoot: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__will_root(node_id ${id_type}, link_id ${id_type}) RETURNS boolean AS $$
-  DECLARE result BOOLEAN;
-  BEGIN
-    SELECT COUNT("${id_field}") = 0
-    INTO result
-    FROM
-    "${graphTableName}"
-    WHERE
-    (
-      "${to_field}" = node_id OR "${id_field}" = node_id
-    ) AND
-    "id" != link_id
-    LIMIT 1;
-    RETURN result;
-  END;
-  $$ LANGUAGE plpgsql;`,
-  
   downFunctionDeleteNode: () => sql`
-    DROP FUNCTION IF EXISTS ${mpTableName}__delete_node__function;
-    DROP FUNCTION IF EXISTS ${mpTableName}__delete_node__function_core;
+    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function;
+    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function_core;
   `,
-  upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__delete_node__function_core(OLD RECORD${iteratorDeleteArgumentGet ? `,${iteratorDeleteArgumentGet}` : ''})
+  upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__delete_link__function_core(OLD RECORD${iteratorDeleteArgumentGet ? `,${iteratorDeleteArgumentGet}` : ''})
   RETURNS VOID AS $trigger$
   DECLARE
     linkFlow RECORD;
@@ -263,47 +233,69 @@ export const Trigger = ({
         toOutFlowLink."${id_field}" = OLD."${to_field}" AND
         toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
         toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-        toOutFlowItem."group_id" = ${groupInsert}
+        toOutFlowItem."group_id" = ${groupDelete}
       ) OR (
         toOutFlowLink."${from_field}" = OLD."${id_field}" AND
         toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
         toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-        toOutFlowItem."group_id" = ${groupInsert}
+        toOutFlowItem."group_id" = ${groupDelete}
       )
     )
     LOOP
-      SELECT inFromItems.* INTO inFromFlow
-      FROM "${mpTableName}" as inFromItems
-      WHERE
-      "item_id" = toOutItems."path_item_id" AND
-      "path_item_id" = toOutItems."path_item_id" AND
-      "group_id" = ${groupDelete} LIMIT 1;
+      IF (
+        (
+          SELECT COUNT(*) FROM "${mpTableName}" WHERE "item_id" = "path_item_id" AND "item_id" = OLD."${id_field}"
+        ) = (
+          SELECT COUNT(*) FROM "${mpTableName}" WHERE "item_id" = "path_item_id" AND "item_id" = toOutItems."item_id"
+        )
+      ) THEN
 
-      UPDATE "${mpTableName}"
-      SET
-      "path_item_depth" = "path_item_depth" - (inFromFlow."path_item_depth"),
-      "root_id" = toOutItems."path_item_id"
-      WHERE
-      "id" IN (
-        SELECT toUpdate."id"
-        FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toUpdate
+        SELECT inFromItems.* INTO inFromFlow
+        FROM "${mpTableName}" as inFromItems
         WHERE
-        toOutDown."path_item_id" = inFromFlow."path_item_id" AND
-        toUpdate."position_id" = toOutDown."position_id"
-      );
+        "item_id" = toOutItems."path_item_id" AND
+        "path_item_id" = toOutItems."path_item_id" AND
+        "group_id" = ${groupDelete} LIMIT 1;
 
-      DELETE FROM "${mpTableName}"
-      WHERE
-      "id" IN (
-        SELECT toDelete."id"
-        FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toDelete
+        UPDATE "${mpTableName}"
+        SET
+        "path_item_depth" = "path_item_depth" - (inFromFlow."path_item_depth"),
+        "root_id" = toOutItems."path_item_id"
         WHERE
-        toOutDown."path_item_id" = inFromFlow."path_item_id" AND
-        toOutDown."group_id" = ${groupDelete} AND
-        toDelete."position_id" = toOutDown."position_id" AND
-        toDelete."path_item_depth" < 0 AND
-        toDelete."group_id" = ${groupDelete}
-      );
+        "id" IN (
+          SELECT toUpdate."id"
+          FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toUpdate
+          WHERE
+          toOutDown."path_item_id" = inFromFlow."path_item_id" AND
+          toUpdate."position_id" = toOutDown."position_id"
+        );
+
+        DELETE FROM "${mpTableName}"
+        WHERE
+        "id" IN (
+          SELECT toDelete."id"
+          FROM "${mpTableName}" as toOutDown, "${mpTableName}" as toDelete
+          WHERE
+          toOutDown."path_item_id" = inFromFlow."path_item_id" AND
+          toOutDown."group_id" = ${groupDelete} AND
+          toDelete."position_id" = toOutDown."position_id" AND
+          toDelete."path_item_depth" < 0 AND
+          toDelete."group_id" = ${groupDelete}
+        );
+      ELSE
+        DELETE FROM "${mpTableName}"
+        WHERE
+        "id" IN (
+          SELECT toDelete."id"
+          FROM
+          "${mpTableName}" as toDelete,
+          "${mpTableName}" as childs
+          WHERE
+          childs."group_id" = ${groupDelete} AND
+          childs."path_item_id" = OLD."${id_field}" AND
+          toDelete."position_id" = childs."position_id"
+        );
+      END IF;
     END LOOP;
   
     -- DN
@@ -311,22 +303,22 @@ export const Trigger = ({
     WHERE "item_id" = OLD."id";
   END;
   $trigger$ LANGUAGE plpgsql;
-  CREATE OR REPLACE FUNCTION ${mpTableName}__delete_node__function()
+  CREATE OR REPLACE FUNCTION ${mpTableName}__delete_link__function()
   RETURNS TRIGGER AS $trigger$
   DECLARE
     ${iteratorDeleteDeclare}
   BEGIN
     ${iteratorDeleteBegin}
-      PERFORM ${mpTableName}__delete_node__function_core(OLD${iteratorDeleteArgumentSend ? `,${iteratorDeleteArgumentSend}` : ''});
+      PERFORM ${mpTableName}__delete_link__function_core(OLD${iteratorDeleteArgumentSend ? `,${iteratorDeleteArgumentSend}` : ''});
     ${iteratorDeleteEnd}
 
     RETURN OLD;
   END;
   $trigger$ LANGUAGE plpgsql;`,
   
-  downTriggerDelete: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__delete_node__trigger ON "${graphTableName}";`,
-  upTriggerDelete: () => sql`CREATE TRIGGER ${mpTableName}__delete_node__trigger AFTER DELETE ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__delete_node__function();`,
+  downTriggerDelete: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__delete_link__trigger ON "${graphTableName}";`,
+  upTriggerDelete: () => sql`CREATE TRIGGER ${mpTableName}__delete_link__trigger AFTER DELETE ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__delete_link__function();`,
 
-  downTriggerInsert: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__insert_node__trigger ON "${graphTableName}";`,
-  upTriggerInsert: () => sql`CREATE TRIGGER ${mpTableName}__insert_node__trigger AFTER INSERT ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__insert_node__function();`,
+  downTriggerInsert: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__insert_link__trigger ON "${graphTableName}";`,
+  upTriggerInsert: () => sql`CREATE TRIGGER ${mpTableName}__insert_link__trigger AFTER INSERT ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__insert_link__function();`,
 });

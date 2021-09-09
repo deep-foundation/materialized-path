@@ -7,13 +7,13 @@ import assert from 'assert';
 const debug = Debug('deepcase:materialized-path:check');
 
 const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
-const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__nodes__mp';
-const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__nodes';
+const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
+const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
 export const fetch = async (type_id: number, idType: string = ID_TYPE) => {
   const result = await client.query({ query: gql`query FETCH($type_id: ${idType}) {
-    mp: ${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { id item_id path_item_depth path_item_id root_id position_id by_position(order_by: { path_item_depth: asc }) { id item_id path_item_depth path_item_id root_id position_id } }
+    mp: ${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }, order_by: {id: asc}) { id item_id path_item_depth path_item_id root_id position_id by_position(order_by: { path_item_depth: asc }) { id item_id path_item_depth path_item_id root_id position_id } }
     nodes: ${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { from_id id to_id type_id in { from_id id to_id type_id } out { from_id id to_id type_id } }
   }`, variables: { type_id } });
   return { nodes: result?.data?.nodes || [], mp: result?.data?.mp || [] };
