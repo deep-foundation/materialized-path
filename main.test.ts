@@ -5,6 +5,7 @@ import { gql } from 'apollo-boost';
 import Chance from 'chance';
 import { check, checkManual } from './check';
 import { client } from './client';
+import fs from 'fs';
 
 const chance = new Chance();
 const debug = Debug('deepcase:materialized-path:test');
@@ -117,6 +118,12 @@ const findNoParent = async (notId: number, type_id: number, idType: string = ID_
   return { nodes: result?.data?.nodes || [] };
 };
 
+const addLink = (link) => {
+  const obj = JSON.parse(fs.readFileSync('./temp.json', 'utf-8'));
+  obj.push(link);
+  fs.writeFileSync('./temp.json', JSON.stringify(obj), 'utf-8');
+}
+
 const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
   const nodes = array.filter(a => !a.from_id && !a.to_id);
   let founded = 0;
@@ -131,6 +138,7 @@ const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
       debug(`possible ${sn.id} => ${tn.id}`);
       if (sn && tn) {
         const id = await insertLink(sn.id, tn.id, type_id);
+        addLink({ id, from_id: sn.id, to_id: tn.id, type_id });
         nodesHash[id] = id;
         founded++;
       }
@@ -346,12 +354,14 @@ it('tree', async () => {
   await check({ a, ...ns }, type_id);
 });
 itDelay();
-it('multiparental tree', async () => {
+it.skip('multiparental tree', async () => {
   debug('multiparental tree');
   await clear(type_id);
+    fs.writeFileSync('./temp.json', '[]');
   const a = await insertNode(type_id);
   const { array } = generateTree(a, 100);
   const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
+  ids.forEach((id, i) => addLink({ id, type_id, from_id: array[i].from_id, to_id: array[i].to_id }));
   const ns = {};
   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
   await generateMultiparentalTree(array, ns, 30);

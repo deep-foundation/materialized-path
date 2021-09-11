@@ -139,8 +139,8 @@ export const Trigger = ({
       LOOP
         FOR toOutFlow
         IN (
-          SELECT 
-          DISTINCT toOutFlowItem."path_item_id", toOutFlowItem."path_item_depth", toOutFlowItem."group_id"
+          SELECT
+          DISTINCT toOutFlowItem."path_item_id", toOutFlowItem."path_item_depth", toOutFlowItem."group_id", toOutFlowItem."position_id",toOutFlowItem."item_id"
           FROM "${graphTableName}" as toOutFlowLink, "${mpTableName}" as toOutFlowItem
           WHERE
           (
@@ -156,7 +156,7 @@ export const Trigger = ({
           )
         )
         LOOP
-            
+          
           SELECT gen_random_uuid() INTO positionId;
 
           -- add prev flows current to to/out flow
@@ -172,10 +172,26 @@ export const Trigger = ({
           ${additionalData}
           FROM "${mpTableName}" AS spreadingFlows, "${mpTableName}" AS toOutFlowDown
           WHERE
-          spreadingFlows."item_id" = currentFlow."path_item_id" AND
+          spreadingFlows."position_id" = currentFlow."position_id" AND
+          spreadingFlows."item_id" = currentFlow."item_id" AND
           spreadingFlows."group_id" = currentFlow."group_id" AND
           toOutFlowDown."group_id" = toOutFlow."group_id" AND
-          toOutFlowDown."path_item_id" = toOutFlow."path_item_id";
+          toOutFlowDown."path_item_id" = toOutFlow."path_item_id" AND
+          toOutFlowDown."id" IN (
+            SELECT toOutFlowDownPath."id"
+            FROM
+            "${mpTableName}" AS toOutFlowDownPath,
+            "${mpTableName}" AS toOutFlowPath
+            WHERE
+            toOutFlowPath."position_id" = toOutFlow."position_id" AND
+            toOutFlowPath."item_id" = toOutFlow."item_id" AND
+            toOutFlowPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+            toOutFlowDownPath."position_id" = toOutFlowDown."position_id" AND
+            toOutFlowDownPath."item_id" = toOutFlowDown."item_id" AND
+            toOutFlowDownPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+            toOutFlowPath."path_item_id" = toOutFlowDownPath."path_item_id" AND
+            toOutFlowPath."path_item_depth" = toOutFlowDownPath."path_item_depth"
+          );
 
           -- clone exists flows of to/out
           INSERT INTO "${mpTableName}"
@@ -195,7 +211,22 @@ export const Trigger = ({
           toOutItems."item_id" = toOutFlowDown."item_id" AND
           toOutItems."position_id" = toOutFlowDown."position_id" AND
           toOutItems."path_item_depth" >= toOutFlow."path_item_depth" AND
-          toOutItems."group_id" = toOutFlowDown."group_id";
+          toOutItems."group_id" = toOutFlowDown."group_id" AND
+          toOutFlowDown."id" IN (
+            SELECT toOutFlowDownPath."id"
+            FROM
+            "${mpTableName}" AS toOutFlowDownPath,
+            "${mpTableName}" AS toOutFlowPath
+            WHERE
+            toOutFlowPath."position_id" = toOutFlow."position_id" AND
+            toOutFlowPath."item_id" = toOutFlow."item_id" AND
+            toOutFlowPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+            toOutFlowDownPath."position_id" = toOutFlowDown."position_id" AND
+            toOutFlowDownPath."item_id" = toOutFlowDown."item_id" AND
+            toOutFlowDownPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+            toOutFlowPath."path_item_id" = toOutFlowDownPath."path_item_id" AND
+            toOutFlowPath."path_item_depth" = toOutFlowDownPath."path_item_depth"
+          );
 
           -- delete trash roots
           DELETE FROM "${mpTableName}"

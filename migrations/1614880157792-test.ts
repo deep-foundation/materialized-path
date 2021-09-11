@@ -138,6 +138,28 @@ export const up = async ({
   await api.sql(trigger.upFunctionDeleteNode());
   await api.sql(trigger.upTriggerDelete());
   await api.sql(trigger.upTriggerInsert());
+
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__id_hash ON ${GRAPH_TABLE} USING hash (id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__from_id_hash ON ${GRAPH_TABLE} USING hash (from_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__from_id_btree ON ${GRAPH_TABLE} USING btree (from_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__to_id_hash ON ${GRAPH_TABLE} USING hash (to_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__to_id_btree ON ${GRAPH_TABLE} USING btree (to_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_hash ON ${GRAPH_TABLE} USING hash (type_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_btree ON ${GRAPH_TABLE} USING btree (type_id); `);
+
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__id_hash ON ${MP_TABLE} USING hash (id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_hash ON ${MP_TABLE} USING hash (item_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_btree ON ${MP_TABLE} USING btree (item_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_id_hash ON ${MP_TABLE} USING hash (path_item_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_id_btree ON ${MP_TABLE} USING btree (path_item_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_depth_hash ON ${MP_TABLE} USING hash (path_item_depth);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__path_item_depth_btree ON ${MP_TABLE} USING btree (path_item_depth);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__root_id_hash ON ${MP_TABLE} USING hash (root_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__root_id_btree ON ${MP_TABLE} USING btree (root_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__position_id_hash ON ${MP_TABLE} USING hash (position_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__position_id_btree ON ${MP_TABLE} USING btree (position_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__group_id_hash ON ${MP_TABLE} USING hash (group_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__group_id_btree ON ${MP_TABLE} USING btree (group_id);`);
 };
 
 export const down = async ({
