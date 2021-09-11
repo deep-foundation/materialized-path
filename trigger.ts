@@ -50,28 +50,12 @@ export const Trigger = ({
   DECLARE
     fromInFlow RECORD;
     toOutFlow RECORD;
+    toOutFlowDown RECORD;
     currentFlow RECORD;
     positionId TEXT;
     ${iteratorInsertDeclare}
   BEGIN
     ${iteratorInsertBegin}
-      IF EXISTS (
-        SELECT * FROM "${graphTableName}" as fromInFlowLink, "${mpTableName}" as mp WHERE
-        mp."group_id" = ${groupInsert} AND
-        mp."path_item_id" = NEW."${id_field}" AND
-        (
-          (
-            fromInFlowLink."${id_field}" = NEW."${from_field}" AND
-            mp."item_id" = fromInFlowLink."${id_field}"
-          ) OR (
-            fromInFlowLink."${to_field}" = NEW."${id_field}" AND
-            mp."item_id" = fromInFlowLink."${id_field}"
-          )
-        )
-      ) THEN
-        RAISE EXCEPTION 'recursion detected for %', NEW."${id_field}"; 
-      END IF;
-
       FOR fromInFlow
       IN (
         SELECT fromInFlowItem.*
@@ -156,77 +140,77 @@ export const Trigger = ({
           )
         )
         LOOP
-          
-          SELECT gen_random_uuid() INTO positionId;
+          IF EXISTS (
+            SELECT * FROM "${mpTableName}" as mp WHERE
+            mp."group_id" = ${groupInsert} AND
+            mp."path_item_id" = NEW."${id_field}" AND
+            mp."item_id" = toOutFlow."item_id"
+          ) THEN
+            RAISE EXCEPTION 'recursion detected for % in toOutFlow %', NEW."${id_field}", toOutFlow."item_id"; 
+          END IF;
 
-          -- add prev flows current to to/out flow
-          INSERT INTO "${mpTableName}"
-          ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
-          SELECT
-          toOutFlowDown."item_id",
-          spreadingFlows."path_item_id",
-          spreadingFlows."path_item_depth",
-          spreadingFlows."root_id",
-          positionId,
-          ${groupInsert}
-          ${additionalData}
-          FROM "${mpTableName}" AS spreadingFlows, "${mpTableName}" AS toOutFlowDown
-          WHERE
-          spreadingFlows."position_id" = currentFlow."position_id" AND
-          spreadingFlows."item_id" = currentFlow."item_id" AND
-          spreadingFlows."group_id" = currentFlow."group_id" AND
-          toOutFlowDown."group_id" = toOutFlow."group_id" AND
-          toOutFlowDown."path_item_id" = toOutFlow."path_item_id" AND
-          toOutFlowDown."id" IN (
-            SELECT toOutFlowDownPath."id"
-            FROM
-            "${mpTableName}" AS toOutFlowDownPath,
-            "${mpTableName}" AS toOutFlowPath
+          FOR toOutFlowDown
+          IN (
+            SELECT
+            toOutFlowDownItems.*
+            FROM "${mpTableName}" AS toOutFlowDownItems
             WHERE
-            toOutFlowPath."position_id" = toOutFlow."position_id" AND
-            toOutFlowPath."item_id" = toOutFlow."item_id" AND
-            toOutFlowPath."path_item_depth" <= toOutFlow."path_item_depth" AND
-            toOutFlowDownPath."position_id" = toOutFlowDown."position_id" AND
-            toOutFlowDownPath."item_id" = toOutFlowDown."item_id" AND
-            toOutFlowDownPath."path_item_depth" <= toOutFlow."path_item_depth" AND
-            toOutFlowPath."path_item_id" = toOutFlowDownPath."path_item_id" AND
-            toOutFlowPath."path_item_depth" = toOutFlowDownPath."path_item_depth"
-          );
+            toOutFlowDownItems."group_id" = toOutFlow."group_id" AND
+            toOutFlowDownItems."path_item_id" = toOutFlow."path_item_id" AND
+            toOutFlowDownItems."id" IN (
+              SELECT toOutFlowDownPath."id"
+              FROM
+              "${mpTableName}" AS toOutFlowDownPath,
+              "${mpTableName}" AS toOutFlowPath
+              WHERE
+              toOutFlowPath."position_id" = toOutFlow."position_id" AND
+              toOutFlowPath."item_id" = toOutFlow."item_id" AND
+              toOutFlowPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+              toOutFlowDownPath."position_id" = toOutFlowDownItems."position_id" AND
+              toOutFlowDownPath."item_id" = toOutFlowDownItems."item_id" AND
+              toOutFlowDownPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+              toOutFlowPath."path_item_id" = toOutFlowDownPath."path_item_id" AND
+              toOutFlowPath."path_item_depth" = toOutFlowDownPath."path_item_depth"
+            )
+          )
+          LOOP
+            SELECT gen_random_uuid() INTO positionId;
 
-          -- clone exists flows of to/out
-          INSERT INTO "${mpTableName}"
-          ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
-          SELECT
-          toOutItems."item_id",
-          toOutItems."path_item_id",
-          toOutItems."path_item_depth" + currentFlow."path_item_depth" + 1 - toOutFlow."path_item_depth",
-          currentFlow."root_id",
-          positionId,
-          ${groupInsert}
-          ${additionalData}
-          FROM "${mpTableName}" AS toOutFlowDown, "${mpTableName}" AS toOutItems
-          WHERE
-          toOutFlowDown."group_id" = toOutFlow."group_id" AND
-          toOutFlowDown."path_item_id" = toOutFlow."path_item_id" AND
-          toOutItems."item_id" = toOutFlowDown."item_id" AND
-          toOutItems."position_id" = toOutFlowDown."position_id" AND
-          toOutItems."path_item_depth" >= toOutFlow."path_item_depth" AND
-          toOutItems."group_id" = toOutFlowDown."group_id" AND
-          toOutFlowDown."id" IN (
-            SELECT toOutFlowDownPath."id"
-            FROM
-            "${mpTableName}" AS toOutFlowDownPath,
-            "${mpTableName}" AS toOutFlowPath
+            -- add prev flows current to to/out flow
+            INSERT INTO "${mpTableName}"
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+            SELECT
+            toOutFlowDown."item_id",
+            spreadingFlows."path_item_id",
+            spreadingFlows."path_item_depth",
+            spreadingFlows."root_id",
+            positionId,
+            ${groupInsert}
+            ${additionalData}
+            FROM "${mpTableName}" AS spreadingFlows
             WHERE
-            toOutFlowPath."position_id" = toOutFlow."position_id" AND
-            toOutFlowPath."item_id" = toOutFlow."item_id" AND
-            toOutFlowPath."path_item_depth" <= toOutFlow."path_item_depth" AND
-            toOutFlowDownPath."position_id" = toOutFlowDown."position_id" AND
-            toOutFlowDownPath."item_id" = toOutFlowDown."item_id" AND
-            toOutFlowDownPath."path_item_depth" <= toOutFlow."path_item_depth" AND
-            toOutFlowPath."path_item_id" = toOutFlowDownPath."path_item_id" AND
-            toOutFlowPath."path_item_depth" = toOutFlowDownPath."path_item_depth"
-          );
+            spreadingFlows."position_id" = currentFlow."position_id" AND
+            spreadingFlows."item_id" = currentFlow."item_id" AND
+            spreadingFlows."group_id" = currentFlow."group_id";
+
+            -- clone exists flows of to/out
+            INSERT INTO "${mpTableName}"
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+            SELECT
+            toOutItems."item_id",
+            toOutItems."path_item_id",
+            toOutItems."path_item_depth" + currentFlow."path_item_depth" + 1 - toOutFlow."path_item_depth",
+            currentFlow."root_id",
+            positionId,
+            ${groupInsert}
+            ${additionalData}
+            FROM "${mpTableName}" AS toOutItems
+            WHERE
+            toOutItems."item_id" = toOutFlowDown."item_id" AND
+            toOutItems."position_id" = toOutFlowDown."position_id" AND
+            toOutItems."path_item_depth" >= toOutFlow."path_item_depth" AND
+            toOutItems."group_id" = toOutFlowDown."group_id";
+          END LOOP;
 
           -- delete trash roots
           DELETE FROM "${mpTableName}"
