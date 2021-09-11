@@ -13,7 +13,10 @@ const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
 export const fetch = async (type_id: number, idType: string = ID_TYPE) => {
   const result = await client.query({ query: gql`query FETCH($type_id: ${idType}) {
-    mp: ${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }, order_by: {id: asc}) { id item_id path_item_depth path_item_id root_id position_id by_position(order_by: { path_item_depth: asc }) { id item_id path_item_depth path_item_id root_id position_id } }
+    mp: ${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }, order_by: {id: asc}) {
+      id item_id path_item_depth path_item_id root_id position_id
+      by_position(order_by: { path_item_depth: asc }) { id item_id path_item_depth path_item_id root_id position_id }
+    }
     nodes: ${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { from_id id to_id type_id in { from_id id to_id type_id } out { from_id id to_id type_id } }
   }`, variables: { type_id } });
   return { nodes: result?.data?.nodes || [], mp: result?.data?.mp || [] };
@@ -54,11 +57,17 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
     const isRoot = isLink ? false : !node?.in?.length;
 
     const markers = mp.filter((m) => m.item_id === node.id);
-    const positions = mp.filter((m) => m.item_id === node.id && m.path_item_id === node.id);
+    const flows = mp.filter((m) => m.item_id === node.id && m.path_item_id === node.id);
+
+    for (let f = 0; f < flows.length; f++) {
+      const flow = flows[f];
+      const equalPositionIds = mp.filter(mp => mp.position_id === flow.position_id);
+      if (equalPositionIds.length != flow.path_item_depth + 1) invalid(`invalid positions position_id ${flow.position_id} duplicates ${equalPositionIds.length} for flow.path_item_depth ${flow.path_item_depth}`);
+    }
 
     debug(
       `check #${n[node.id]} ${isLink ? 'link' : 'node'} in${node?.in?.length} out${node?.out?.length}`,
-      positions.map((pos) => {
+      flows.map((pos) => {
         return `${n[pos.root_id]} [${pos.by_position.map((m) => `${n[m.path_item_id]}`).join(',')}]`;
       }),
     );
@@ -69,7 +78,7 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
 
     if (!markers.length) invalid(`invalid node #${n[node.id]} markers lost, markers.length = ${markers.length}`);
 
-    positions.forEach((position) => {
+    flows.forEach((position) => {
       checkPosition(position);
     });
   };
