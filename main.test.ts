@@ -179,7 +179,7 @@ afterAll(async () => {
   debug('prepare', ids);
 });
 
-it.skip('+1', async () => {
+it('+1', async () => {
   debug('+1');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -187,7 +187,7 @@ it.skip('+1', async () => {
   await check({ a, b }, type_id);
 });
 itDelay();
-it.skip('-1', async () => {
+it('-1', async () => {
   debug('-1');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -196,7 +196,7 @@ it.skip('-1', async () => {
   await check({ a, b }, type_id);
 });
 itDelay();
-it.skip('+2', async () => {
+it('+2', async () => {
   debug('+2');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -205,7 +205,7 @@ it.skip('+2', async () => {
   await check({ a, b, c }, type_id);
 });
 itDelay();
-it.skip('-2', async () => {
+it('-2', async () => {
   debug('-2');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -215,7 +215,7 @@ it.skip('-2', async () => {
   await check({ a, b, c }, type_id);
 });
 itDelay();
-it.skip('+3', async () => {
+it('+3', async () => {
   debug('+3');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -233,7 +233,7 @@ it.skip('+3', async () => {
   ], type_id);
 });
 itDelay();
-it.skip('-3', async () => {
+it('-3', async () => {
   debug('-3');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -251,7 +251,7 @@ it.skip('-3', async () => {
   ], type_id);
 });
 itDelay();
-it.skip('+4', async () => {
+it('+4', async () => {
   debug('+4');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -264,7 +264,7 @@ it.skip('+4', async () => {
   await check({ a, b, c, d, e, x, y }, type_id);
 });
 itDelay();
-it.skip('-4', async () => {
+it('-4', async () => {
   debug('-4');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -286,7 +286,7 @@ it.skip('-4', async () => {
   ], type_id);
 });
 itDelay();
-it.skip('+5', async () => {
+it('+5', async () => {
   debug('+5');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -308,7 +308,7 @@ it.skip('+5', async () => {
   ], type_id);
 });
 itDelay();
-it.skip('-5', async () => {
+it('-5', async () => {
   debug('-5');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -330,7 +330,7 @@ it.skip('-5', async () => {
   ], type_id);
 });
 itDelay();
-it.skip('+7', async () => {
+it('+7', async () => {
   debug('+7');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -342,7 +342,7 @@ it.skip('+7', async () => {
   await check({ a, b, c, d, e, y }, type_id);
 });
 itDelay();
-it.skip('-7', async () => {
+it('-7', async () => {
   debug('-7');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -355,7 +355,7 @@ it.skip('-7', async () => {
   await check({ a, b, c, d, e, y }, type_id);
 });
 itDelay();
-it.skip('tree', async () => {
+it('tree', async () => {
   debug('tree');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -366,7 +366,7 @@ it.skip('tree', async () => {
   await check({ a, ...ns }, type_id);
 });
 itDelay();
-it.skip('multiparental tree', async () => {
+it('multiparental tree', async () => {
   debug('multiparental tree');
   await clear(type_id);
   fs.writeFileSync('./temp.json', '[]');
@@ -396,16 +396,9 @@ it('multiple ways', async () => {
   const m = await insertLink(b, d, type_id);
   const n = await insertLink(b, d, type_id);
   const f = await insertLink(d, c, type_id);
-  // for (let d = 0; d < links.length; d++) {
-  //   const link = links[d];
-  //   addLink(link);
-  //   await insertLink(link.from_id, link.to_id, link.type_id);
-  // }
-  // const ns = {};
-  // for (let d = 0; d < links.length; d++) ns[links[d].id] = links[d].id;
   await check({ a, b, c, d, x, y, r, m, n, f }, type_id);
 });
-it.skip('8', async () => {
+it('8', async () => {
   debug('8');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -420,7 +413,7 @@ it.skip('8', async () => {
   await insertNode(type_id);
   await insertNode(type_id);
 });
-it.skip('9', async () => {
+it('9', async () => {
   debug('9');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -436,7 +429,7 @@ it.skip('9', async () => {
   ], type_id);
   await insertNode(type_id);
 });
-it.skip('10', async () => {
+it('10', async () => {
   debug('10');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -452,7 +445,7 @@ it.skip('10', async () => {
   ], type_id);
   await insertNode(type_id);
 });
-it.skip('11', async () => {
+it('11', async () => {
   debug('11');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -469,7 +462,7 @@ it.skip('11', async () => {
     [a,0,0,type_id,[[a,a]]],
   ], type_id);
 });
-it.skip('12', async () => {
+it('12', async () => {
   debug('12');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -486,7 +479,7 @@ it.skip('12', async () => {
     [b,0,0,type_id,[[c,c], [c,b]]],
   ], type_id);
 });
-it.skip('13', async () => {
+it('13', async () => {
   debug('13');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -503,7 +496,7 @@ it.skip('13', async () => {
     [c,a,b,type_id,[[c,c]]],
   ], type_id);
 });
-it.skip('14', async () => {
+it('14', async () => {
   debug('14');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -519,7 +512,7 @@ it.skip('14', async () => {
   ], type_id);
   await insertNode(type_id);
 });
-it.skip('deeplinks demo tree', async () => {
+it('deeplinks demo tree', async () => {
   debug('deeplinks demo tree');
   await clear(type_id);
   const n0 = await insertNode(type_id);

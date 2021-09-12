@@ -100,7 +100,7 @@ export const Trigger = ({
         fromInItemPath."root_id",
         positionId,
         ${groupInsert}
-        ${call(additionalData, `(SELECT concat('fromIn ',NEW."${id_field}"))`)}
+        ${call(additionalData, `(SELECT concat('fromIn ',NEW."${id_field}",' ', fromInFlow."id"))`)}
         FROM "${mpTableName}" AS fromInItemPath
         WHERE
         fromInItemPath."item_id" = fromInFlow."item_id" AND
