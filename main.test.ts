@@ -394,9 +394,9 @@ it('multiple ways', async () => {
   const y = await insertLink(a, b, type_id);
   const r = await insertLink(a, c, type_id);
   const m = await insertLink(b, d, type_id);
-  const n = await insertLink(b, d, type_id);
-  const f = await insertLink(d, c, type_id);
-  await check({ a, b, c, d, x, y, r, m, n, f }, type_id);
+  // const n = await insertLink(b, d, type_id);
+  // const f = await insertLink(d, c, type_id);
+  await check({ a, b, c, d, x, y, r, m }, type_id);
 });
 it('8', async () => {
   debug('8');

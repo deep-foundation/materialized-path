@@ -172,14 +172,6 @@ export const Trigger = ({
             WHERE
             toOutFlowDownItems."group_id" = toOutFlow."group_id" AND
             toOutFlowDownItems."path_item_id" = toOutFlow."path_item_id" AND
-            NOT EXISTS (
-              SELECT inserted.*
-              FROM "${mpTableName}" AS inserted
-              WHERE
-              inserted."item_id" = toOutFlowDownItems."item_id" AND
-              inserted."position_id" = toOutFlowDownItems."position_id" AND
-              inserted."path_item_id" = NEW."${id_field}"
-            ) AND
             toOutFlowDownItems."id" IN (
               SELECT toOutFlowDownPath."id"
               FROM
