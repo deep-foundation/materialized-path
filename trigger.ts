@@ -1,5 +1,10 @@
 import { sql } from '@deepcase/hasura/sql';
 
+const call = (strOrFn: string | ((action: string) => string), action: string): string => {
+  if (typeof(strOrFn) === 'function') return strOrFn(action);
+  return strOrFn;
+};
+
 export interface IOptions {
   mpTableName?: string;
   graphTableName?: string;
@@ -17,8 +22,8 @@ export interface IOptions {
   iteratorDeleteEnd?: string;
   groupInsert?: string;
   groupDelete?: string;
-  additionalFields?: string;
-  additionalData?: string;
+  additionalFields?: string | ((action: string) => string);
+  additionalData?: string | ((action: string) => string);
 }
 
 export const Trigger = ({
@@ -74,10 +79,20 @@ export const Trigger = ({
         )
       )
       LOOP
+        IF EXISTS (
+          SELECT * FROM "${mpTableName}" AS spreadingFlows WHERE
+          spreadingFlows."position_id" = fromInFlow."position_id" AND
+          spreadingFlows."item_id" = fromInFlow."item_id" AND
+          spreadingFlows."group_id" = fromInFlow."group_id" AND
+          spreadingFlows."path_item_id" = NEW."${id_field}"
+        ) THEN
+          RAISE EXCEPTION 'recursion detected for link #% in fromInFlow mp #%', NEW."${id_field}", fromInFlow."id"; 
+        END IF;
+
         SELECT gen_random_uuid() INTO positionId;
 
         INSERT INTO "${mpTableName}"
-        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'fromIn')})
         SELECT
         NEW."${id_field}",
         fromInItemPath."path_item_id",
@@ -85,15 +100,15 @@ export const Trigger = ({
         fromInItemPath."root_id",
         positionId,
         ${groupInsert}
-        ${additionalData}
+        ${call(additionalData, 'fromIn')}
         FROM "${mpTableName}" AS fromInItemPath
         WHERE
         fromInItemPath."item_id" = fromInFlow."item_id";
 
         INSERT INTO "${mpTableName}"
-        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'current')})
         VALUES
-        (NEW."${id_field}",NEW."${id_field}",fromInFlow."path_item_depth" + 1,fromInFlow."root_id",positionId,${groupInsert}${additionalData});
+        (NEW."${id_field}",NEW."${id_field}",fromInFlow."path_item_depth" + 1,fromInFlow."root_id",positionId,${groupInsert}${call(additionalData, 'current')});
       END LOOP;
 
       IF (
@@ -106,9 +121,9 @@ export const Trigger = ({
       )
       THEN
         INSERT INTO "${mpTableName}"
-        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+        ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'root')})
         VALUES
-        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert}${additionalData});
+        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert}${call(additionalData, 'root')});
       END IF;
 
       FOR currentFlow
@@ -140,14 +155,6 @@ export const Trigger = ({
           )
         )
         LOOP
-          IF EXISTS (
-            SELECT * FROM "${mpTableName}" as mp WHERE
-            mp."group_id" = ${groupInsert} AND
-            mp."path_item_id" = NEW."${id_field}" AND
-            mp."item_id" = toOutFlow."item_id"
-          ) THEN
-            RAISE EXCEPTION 'recursion detected for % in toOutFlow %', NEW."${id_field}", toOutFlow."item_id"; 
-          END IF;
 
           FOR toOutFlowDown
           IN (
@@ -174,11 +181,21 @@ export const Trigger = ({
             )
           )
           LOOP
+            IF EXISTS (
+              SELECT * FROM "${mpTableName}" AS spreadingFlows WHERE
+              spreadingFlows."position_id" = currentFlow."position_id" AND
+              spreadingFlows."item_id" = currentFlow."item_id" AND
+              spreadingFlows."group_id" = currentFlow."group_id" AND
+              spreadingFlows."path_item_id" = toOutFlowDown."item_id"
+            ) THEN
+              RAISE EXCEPTION 'recursion detected for link #% in spreadingFlow mp #% toOutFlowDown mp #%', NEW."${id_field}", currentFlows."id", toOutFlowDown."id"; 
+            END IF;
+
             SELECT gen_random_uuid() INTO positionId;
 
             -- add prev flows current to to/out flow
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'currentFlow')})
             SELECT
             toOutFlowDown."item_id",
             spreadingFlows."path_item_id",
@@ -186,7 +203,7 @@ export const Trigger = ({
             spreadingFlows."root_id",
             positionId,
             ${groupInsert}
-            ${additionalData}
+            ${call(additionalData, 'currentFlow')}
             FROM "${mpTableName}" AS spreadingFlows
             WHERE
             spreadingFlows."position_id" = currentFlow."position_id" AND
@@ -195,7 +212,7 @@ export const Trigger = ({
 
             -- clone exists flows of to/out
             INSERT INTO "${mpTableName}"
-            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${additionalFields})
+            ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'toOut')})
             SELECT
             toOutItems."item_id",
             toOutItems."path_item_id",
@@ -203,7 +220,7 @@ export const Trigger = ({
             currentFlow."root_id",
             positionId,
             ${groupInsert}
-            ${additionalData}
+            ${call(additionalData, 'toOut')}
             FROM "${mpTableName}" AS toOutItems
             WHERE
             toOutItems."item_id" = toOutFlowDown."item_id" AND

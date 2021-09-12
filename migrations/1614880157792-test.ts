@@ -28,6 +28,8 @@ export const up = async ({
     iteratorDeleteBegin: ``,
     iteratorDeleteEnd: '',
     groupDelete: '0',
+    additionalFields: (action: string) => ',"custom"',
+    additionalData: (action: string) => `,'${action}'`,
   }),
 } = {}) => {
   await api.sql(sql`
@@ -106,7 +108,7 @@ export const up = async ({
       }
     }
   });
-  await upTable({ SCHEMA, MP_TABLE });
+  await upTable({ SCHEMA, MP_TABLE, customColumns: ',custom TEXT' });
   await api.query({
     type: 'create_select_permission',
     args: {
