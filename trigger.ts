@@ -100,15 +100,16 @@ export const Trigger = ({
         fromInItemPath."root_id",
         positionId,
         ${groupInsert}
-        ${call(additionalData, 'fromIn')}
+        ${call(additionalData, `(SELECT concat('fromIn ',NEW."${id_field}"))`)}
         FROM "${mpTableName}" AS fromInItemPath
         WHERE
-        fromInItemPath."item_id" = fromInFlow."item_id";
+        fromInItemPath."item_id" = fromInFlow."item_id" AND
+        fromInItemPath."position_id" = fromInFlow."position_id";
 
         INSERT INTO "${mpTableName}"
         ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'current')})
         VALUES
-        (NEW."${id_field}",NEW."${id_field}",fromInFlow."path_item_depth" + 1,fromInFlow."root_id",positionId,${groupInsert}${call(additionalData, 'current')});
+        (NEW."${id_field}",NEW."${id_field}",fromInFlow."path_item_depth" + 1,fromInFlow."root_id",positionId,${groupInsert}${call(additionalData, `(SELECT concat('current ',NEW."${id_field}"))`)});
       END LOOP;
 
       IF (
@@ -123,7 +124,7 @@ export const Trigger = ({
         INSERT INTO "${mpTableName}"
         ("item_id","path_item_id","path_item_depth","root_id","position_id","group_id"${call(additionalFields, 'root')})
         VALUES
-        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert}${call(additionalData, 'root')});
+        (NEW."${id_field}",NEW."${id_field}",0,NEW."${id_field}",gen_random_uuid(),${groupInsert}${call(additionalData, `(SELECT concat('root ',NEW."${id_field}"))`)});
       END IF;
 
       FOR currentFlow
@@ -164,6 +165,14 @@ export const Trigger = ({
             WHERE
             toOutFlowDownItems."group_id" = toOutFlow."group_id" AND
             toOutFlowDownItems."path_item_id" = toOutFlow."path_item_id" AND
+            NOT EXISTS (
+                SELECT inserted.*
+                FROM "${mpTableName}" AS inserted
+                WHERE
+                inserted."item_id" = toOutFlowDownItems."item_id" AND
+                inserted."position_id" = toOutFlowDownItems."position_id" AND
+                inserted."path_item_id" = NEW."${id_field}"
+            ) AND
             toOutFlowDownItems."id" IN (
               SELECT toOutFlowDownPath."id"
               FROM
@@ -203,7 +212,7 @@ export const Trigger = ({
             spreadingFlows."root_id",
             positionId,
             ${groupInsert}
-            ${call(additionalData, 'currentFlow')}
+            ${call(additionalData, `(SELECT concat('currentFlow ',NEW."${id_field}"))`)}
             FROM "${mpTableName}" AS spreadingFlows
             WHERE
             spreadingFlows."position_id" = currentFlow."position_id" AND
@@ -220,7 +229,7 @@ export const Trigger = ({
             currentFlow."root_id",
             positionId,
             ${groupInsert}
-            ${call(additionalData, 'toOut')}
+            ${call(additionalData, `(SELECT concat('toOut ',NEW."${id_field}"))`)}
             FROM "${mpTableName}" AS toOutItems
             WHERE
             toOutItems."item_id" = toOutFlowDown."item_id" AND
