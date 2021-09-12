@@ -153,10 +153,17 @@ export const Trigger = ({
             toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
             toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
             toOutFlowItem."group_id" = ${groupInsert}
+          ) AND
+          NOT EXISTS (
+            SELECT inserted.*
+            FROM "${mpTableName}" AS inserted
+            WHERE
+            inserted."item_id" = toOutFlowItem."item_id" AND
+            inserted."position_id" = toOutFlowItem."position_id" AND
+            inserted."path_item_id" = NEW."${id_field}"
           )
         )
         LOOP
-
           FOR toOutFlowDown
           IN (
             SELECT
@@ -166,12 +173,12 @@ export const Trigger = ({
             toOutFlowDownItems."group_id" = toOutFlow."group_id" AND
             toOutFlowDownItems."path_item_id" = toOutFlow."path_item_id" AND
             NOT EXISTS (
-                SELECT inserted.*
-                FROM "${mpTableName}" AS inserted
-                WHERE
-                inserted."item_id" = toOutFlowDownItems."item_id" AND
-                inserted."position_id" = toOutFlowDownItems."position_id" AND
-                inserted."path_item_id" = NEW."${id_field}"
+              SELECT inserted.*
+              FROM "${mpTableName}" AS inserted
+              WHERE
+              inserted."item_id" = toOutFlowDownItems."item_id" AND
+              inserted."position_id" = toOutFlowDownItems."position_id" AND
+              inserted."path_item_id" = NEW."${id_field}"
             ) AND
             toOutFlowDownItems."id" IN (
               SELECT toOutFlowDownPath."id"

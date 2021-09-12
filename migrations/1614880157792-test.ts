@@ -29,7 +29,7 @@ export const up = async ({
     iteratorDeleteEnd: '',
     groupDelete: '0',
     additionalFields: (action: string) => ',"custom"',
-    additionalData: (action: string) => `,'${action}'`,
+    additionalData: (action: string) => `,${action}`,
   }),
 } = {}) => {
   await api.sql(sql`
