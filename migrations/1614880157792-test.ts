@@ -162,6 +162,8 @@ export const up = async ({
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__position_id_btree ON ${MP_TABLE} USING btree (position_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__group_id_hash ON ${MP_TABLE} USING hash (group_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__group_id_btree ON ${MP_TABLE} USING btree (group_id);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__insert_category_hash ON ${MP_TABLE} USING hash (insert_category);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__insert_category_btree ON ${MP_TABLE} USING btree (insert_category);`);
 };
 
 export const down = async ({

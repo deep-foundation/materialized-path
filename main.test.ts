@@ -129,12 +129,6 @@ const countMp = async () => {
   return result?.data?.mp_example__links__mp_aggregate?.aggregate?.count;
 };
 
-const addLink = (link) => {
-  const obj = JSON.parse(fs.readFileSync('./temp.json', 'utf-8'));
-  obj.push(link);
-  fs.writeFileSync('./temp.json', JSON.stringify(obj), 'utf-8');
-}
-
 const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
   const nodes = array.filter(a => !a.from_id && !a.to_id);
   let founded = 0;
@@ -149,7 +143,6 @@ const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
       debug(`possible ${sn.id} => ${tn.id}`);
       if (sn && tn) {
         const id = await insertLink(sn.id, tn.id, type_id);
-        addLink({ id, from_id: sn.id, to_id: tn.id, type_id });
         nodesHash[id] = id;
         founded++;
         debug(`count mp: ${await countMp()}`);
@@ -366,26 +359,9 @@ it('tree', async () => {
   await check({ a, ...ns }, type_id);
 });
 itDelay();
-it('multiparental tree', async () => {
-  debug('multiparental tree');
-  await clear(type_id);
-  fs.writeFileSync('./temp.json', '[]');
-  addLink({ id: type_id, type_id });
-  const a = await insertNode(type_id);
-  addLink({ id: a, type_id });
-  const { array } = generateTree(a, 100);
-  const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
-  ids.forEach((id, i) => addLink({ id, type_id, from_id: array[i].from_id, to_id: array[i].to_id })); 
-  const ns = {};
-  for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
-  await generateMultiparentalTree(array, ns, 10);
-  await check({ a, ...ns }, type_id);
-});
 it('multiple ways', async () => {
   debug('multiple ways');
   await clear(type_id);
-  fs.writeFileSync('./temp.json', '[]');
-  addLink({ id: type_id, type_id });
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   const c = await insertNode(type_id);
@@ -394,9 +370,20 @@ it('multiple ways', async () => {
   const y = await insertLink(a, b, type_id);
   const r = await insertLink(a, c, type_id);
   const m = await insertLink(b, d, type_id);
-  // const n = await insertLink(b, d, type_id);
-  // const f = await insertLink(d, c, type_id);
-  await check({ a, b, c, d, x, y, r, m }, type_id);
+  const n = await insertLink(b, d, type_id);
+  const f = await insertLink(d, c, type_id);
+  await check({ a, b, c, d, x, y, r, m, n, f }, type_id);
+});
+it('multiparental tree', async () => {
+  debug('multiparental tree');
+  await clear(type_id);
+  const a = await insertNode(type_id);
+  const { array } = generateTree(a, 100);
+  const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
+  const ns = {};
+  for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
+  await generateMultiparentalTree(array, ns, 30);
+  await check({ a, ...ns }, type_id);
 });
 it('8', async () => {
   debug('8');
