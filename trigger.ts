@@ -193,7 +193,7 @@ export const Trigger = ({
               spreadingFlows."group_id" = currentFlow."group_id" AND
               spreadingFlows."path_item_id" = toOutFlowDown."item_id"
             ) THEN
-              RAISE EXCEPTION 'recursion detected for link #% in spreadingFlow mp #% toOutFlowDown mp #%', NEW."${id_field}", currentFlows."id", toOutFlowDown."id"; 
+              RAISE EXCEPTION 'recursion detected for link #% in spreadingFlow mp #% toOutFlowDown mp #%', NEW."${id_field}", currentFlow."id", toOutFlowDown."id"; 
             END IF;
 
             SELECT gen_random_uuid() INTO positionId;
