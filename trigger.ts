@@ -163,7 +163,7 @@ export const Trigger = ({
           FOR toOutFlowDown
           IN (
             SELECT
-            DISTINCT ON (toOutFlowDownItems."item_id") "item_id",toOutFlowDownItems."path_item_id", toOutFlowDownItems."path_item_depth", toOutFlowDownItems."group_id", toOutFlowDownItems."position_id"
+            DISTINCT ON (toOutFlowDownItems."item_id") "item_id",toOutFlowDownItems."path_item_id", toOutFlowDownItems."path_item_depth", toOutFlowDownItems."group_id", toOutFlowDownItems."position_id", toOutFlowDownItems."id"
             FROM "${mpTableName}" AS toOutFlowDownItems
             WHERE
             toOutFlowDownItems."group_id" = toOutFlow."group_id" AND
