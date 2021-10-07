@@ -11,7 +11,7 @@ const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
 const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
-export const fetch = async (type_id: number, idType: string = ID_TYPE) => {
+export const fetch = async (type_id: number, idType: string = ID_TYPE, GRAPH_TABLE, MP_TABLE) => {
   const result = await client.query({ query: gql`query FETCH($type_id: ${idType}) {
     mp: ${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }, order_by: {id: asc}) {
       id item_id path_item_depth path_item_id root_id position_id custom
@@ -36,7 +36,7 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
   const n: any = {};
   forEach(hash, (value, key) => { n[value] = key });
 
-  const { nodes, mp } = await fetch(type_id);
+  const { nodes, mp } = await fetch(type_id, ID_TYPE, GRAPH_TABLE, MP_TABLE);
 
   debug('checking');
   let valid = true;
@@ -103,8 +103,8 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
   return { nodes, mp };
 };
 
-export const checkManual = async (links: [number, number, number, number, [number, number][]][], type_id: number) => {
-  const { nodes, mp } = await fetch(type_id);
+export const checkManual = async (links: [number, number, number, number, [number, number][]][], type_id: number, GRAPH_TABLE: string, MP_TABLE: string) => {
+  const { nodes, mp } = await fetch(type_id, ID_TYPE, GRAPH_TABLE, MP_TABLE);
 
   const ns = [];
   const ls = [];

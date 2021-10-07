@@ -4,34 +4,28 @@
 
 ![Main](main.png)
 
-## install
+Associative, multidirectional, multiparental materialized-path realization.
 
-- Before all create `.env` file. (optional)
-  ```sh
-  HASURA_PATH='localhost:8080'
-  HASURA_SSL=0
-  HASURA_SECRET='myadminsecretkey'
+> To understand how to use it for your own purposes - look at migrations and tests.
 
-  MIGRATIONS_HASURA_PATH='localhost:8080'
-  MIGRATIONS_HASURA_SSL=0
-  MIGRATIONS_HASURA_SECRET='myadminsecretkey'
+- [x] Associative links structure base trigger table.
+- [x] Column names configuration. You can use your structure, not only id/from_id/to_id with Trigger class options: `id_field`, `to_field`, `from_field`.
+- [x] Multiparental. Any count of parent links in your trees, not only one.
+- [x] Multidirectional. Not only from => to direction. You can has many trees with many links with many directions with Trigger class options: `isAllowSpreadFromCurrent`, `isAllowSpreadCurrentTo`, `isAllowSpreadToCurrent`, `isAllowSpreadCurrentFrom`, `isAllowSpreadToInCurrent`, `isAllowSpreadCurrentFromOut`, `isAllowSpreadFromOutCurrent`, `isAllowSpreadCurrentToIn`. See multidirectional migrations and tests for details.
+- [x] Customizable id field type with Trigger class option: `id_type`.
+- [x] **PostgreSQL only for now.**
+- [x] Hasura support, but not required.
+- [x] Grouping support. Not only one tree layer for one storage. You can separate multiple tree conditions with Trigger class options: `iteratorInsertDeclare`, `iteratorInsertBegin`, `iteratorInsertEnd`, `iteratorDeleteArgumentSend`, `iteratorDeleteArgumentGet`, `iteratorDeleteDeclare`, `iteratorDeleteBegin`, `iteratorDeleteEnd`, `groupInsert`, `groupDelete`, `additionalFields`, `additionalData`.
+- [ ] [Benchmarks.](https://github.com/deepcase/materialized-path/issues/6)
 
-  MIGRATIONS_SCHEMA='public'
-  MIGRATIONS_MP_TABLE='mp_example__links__mp'
-  MIGRATIONS_GRAPH_TABLE='mp_example__links'
-  MIGRATIONS_ID_TYPE_GQL='Int'
-  MIGRATIONS_ID_TYPE_SQL='integer'
-  ```
-- Optional for tests delay
-  ```sh
-  DELAY=0
-  ```
-- Unmigrate previous test tables, migrate again
-  ```
-  npm run unmigrate && npm run migrate && npm run test
-  ```
+## example
 
-## test
+Install and run docker and npm. And then in this repo directory:
+
 ```
-npm run test
+npm ci;
+npm run hasura;
+npm run migrate;
+npm run test;
+npm run unmigrate;
 ```

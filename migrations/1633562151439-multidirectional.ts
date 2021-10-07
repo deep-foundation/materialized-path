@@ -12,8 +12,8 @@ const api = new HasuraApi({
 });
 
 const DEFAULT_SCHEMA = 'public';
-const DEFAULT_MP_TABLE = 'mp_example__links__mp';
-const DEFAULT_GRAPH_TABLE = 'mp_example__links';
+const DEFAULT_MP_TABLE = 'mp_example__links__mp_md';
+const DEFAULT_GRAPH_TABLE = 'mp_example__links_md';
 const DEFAULT_ID_TYPE = 'integer';
 
 export const up = async ({
@@ -21,7 +21,9 @@ export const up = async ({
   trigger = Trigger({
     mpTableName: MP_TABLE,
     graphTableName: GRAPH_TABLE,
+
     id_type: DEFAULT_ID_TYPE,
+
     iteratorInsertBegin: ``,
     iteratorInsertEnd: '',
     groupInsert: '0',
@@ -30,10 +32,22 @@ export const up = async ({
     groupDelete: '0',
     additionalFields: (action: string) => ',"custom"',
     additionalData: (action: string) => `,${action}`,
+
+    isAllowSpreadFromCurrent: "CURRENT.dir = 'down'",
+    isAllowSpreadCurrentTo: "CURRENT.dir = 'down'",
+
+    isAllowSpreadToCurrent: "CURRENT.dir = 'up'",
+    isAllowSpreadCurrentFrom: "CURRENT.dir = 'up'",
+
+    isAllowSpreadToInCurrent: "flowLink.dir = 'down'",
+    isAllowSpreadCurrentFromOut: "flowLink.dir = 'down'",
+
+    isAllowSpreadFromOutCurrent: "flowLink.dir = 'up'",
+    isAllowSpreadCurrentToIn: "flowLink.dir = 'up'",
   }),
 } = {}) => {
   await api.sql(sql`
-    CREATE TABLE ${SCHEMA}."${GRAPH_TABLE}" (id ${ID_TYPE}, from_id ${ID_TYPE}, to_id ${ID_TYPE}, type_id ${ID_TYPE});
+    CREATE TABLE ${SCHEMA}."${GRAPH_TABLE}" (id ${ID_TYPE}, from_id ${ID_TYPE}, to_id ${ID_TYPE}, type_id ${ID_TYPE}, dir TEXT);
     CREATE SEQUENCE ${GRAPH_TABLE}_id_seq
     AS ${ID_TYPE} START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
     ALTER SEQUENCE ${GRAPH_TABLE}_id_seq OWNED BY ${SCHEMA}."${GRAPH_TABLE}".id;
@@ -148,6 +162,8 @@ export const up = async ({
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__to_id_btree ON ${GRAPH_TABLE} USING btree (to_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_hash ON ${GRAPH_TABLE} USING hash (type_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_btree ON ${GRAPH_TABLE} USING btree (type_id); `);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__dir_hash ON ${GRAPH_TABLE} USING hash (dir);`);
+  await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__dir_btree ON ${GRAPH_TABLE} USING btree (dir); `);
 
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__id_hash ON ${MP_TABLE} USING hash (id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_hash ON ${MP_TABLE} USING hash (item_id);`);

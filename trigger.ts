@@ -8,10 +8,13 @@ const call = (strOrFn: string | ((action: string) => string), action: string): s
 export interface IOptions {
   mpTableName?: string;
   graphTableName?: string;
+
   id_field?: string;
   to_field?: string;
   from_field?: string;
+
   id_type?: string;
+
   iteratorInsertDeclare?: string;
   iteratorInsertBegin?: string;
   iteratorInsertEnd?: string;
@@ -24,15 +27,31 @@ export interface IOptions {
   groupDelete?: string;
   additionalFields?: string | ((action: string) => string);
   additionalData?: string | ((action: string) => string);
+
+  isAllowSpreadFromCurrent?: string;
+  isAllowSpreadCurrentTo?: string;
+
+  isAllowSpreadToCurrent?: string;
+  isAllowSpreadCurrentFrom?: string;
+
+  isAllowSpreadToInCurrent?: string;
+  isAllowSpreadCurrentFromOut?: string;
+
+  isAllowSpreadFromOutCurrent?: string;
+  isAllowSpreadCurrentToIn?: string;
 }
+
+const wrapAnd = (code) => code ? 'AND '+code : '';
 
 export const Trigger = ({
   mpTableName = 'links__mp',
   graphTableName = 'links',
+
   id_field = 'id',
   to_field = 'to_id',
   from_field = 'from_id',
   id_type = 'integer',
+
   iteratorInsertDeclare = '',
   iteratorInsertBegin = '',
   iteratorInsertEnd = '',
@@ -45,6 +64,18 @@ export const Trigger = ({
   groupDelete = '',
   additionalFields = '',
   additionalData = '',
+
+  isAllowSpreadFromCurrent = '',
+  isAllowSpreadCurrentTo = '',
+
+  isAllowSpreadToCurrent = 'FALSE',
+  isAllowSpreadCurrentFrom = 'FALSE',
+
+  isAllowSpreadToInCurrent = '',
+  isAllowSpreadCurrentFromOut = '',
+
+  isAllowSpreadFromOutCurrent = 'FALSE',
+  isAllowSpreadCurrentToIn = 'FALSE',
 }: IOptions) => ({
   downFunctionInsertNode: () => sql`
     DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function;
@@ -54,41 +85,61 @@ export const Trigger = ({
   RETURNS VOID AS $trigger$
   DECLARE
     insertCategory TEXT;
-    fromInFlow RECORD;
-    toOutFlow RECORD;
-    toOutFlowDown RECORD;
+    incomingFlow RECORD;
+    outcomingFlow RECORD;
+    outcomingFlowDown RECORD;
     currentFlow RECORD;
     positionId TEXT;
+    CURRENT RECORD;
     ${iteratorInsertDeclare}
   BEGIN
+    CURRENT:=NEW;
     SELECT gen_random_uuid() INTO insertCategory;
     ${iteratorInsertBegin}
-      FOR fromInFlow
+      FOR incomingFlow
       IN (
-        SELECT fromInFlowItem.*
-        FROM "${graphTableName}" as fromInFlowLink, "${mpTableName}" as fromInFlowItem
+        SELECT flowItem.*
+        FROM "${graphTableName}" as flowLink, "${mpTableName}" as flowItem
         WHERE
         (
-          fromInFlowLink."${id_field}" = NEW."${from_field}" AND
-          fromInFlowItem."item_id" = fromInFlowLink."${id_field}" AND
-          fromInFlowItem."path_item_id" = fromInFlowLink."${id_field}" AND
-          fromInFlowItem."group_id" = ${groupInsert}
+          -- select: FROM to CURRENT
+          flowLink."${id_field}" = NEW."${from_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadFromCurrent)}
         ) OR (
-          fromInFlowLink."${to_field}" = NEW."${id_field}" AND
-          fromInFlowItem."item_id" = fromInFlowLink."${id_field}" AND
-          fromInFlowItem."path_item_id" = fromInFlowLink."${id_field}" AND
-          fromInFlowItem."group_id" = ${groupInsert}
+          -- select: TO to CURRENT
+          flowLink."${id_field}" = NEW."${to_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadToCurrent)}
+        ) OR (
+          -- select: IN to CURRENT
+          flowLink."${to_field}" = NEW."${id_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadToInCurrent)}
+        ) OR (
+          -- select: OUT to CURRENT
+          flowLink."${from_field}" = NEW."${id_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadFromOutCurrent)}
         )
       )
       LOOP
         IF EXISTS (
           SELECT * FROM "${mpTableName}" AS spreadingFlows WHERE
-          spreadingFlows."position_id" = fromInFlow."position_id" AND
-          spreadingFlows."item_id" = fromInFlow."item_id" AND
-          spreadingFlows."group_id" = fromInFlow."group_id" AND
+          spreadingFlows."position_id" = incomingFlow."position_id" AND
+          spreadingFlows."item_id" = incomingFlow."item_id" AND
+          spreadingFlows."group_id" = incomingFlow."group_id" AND
           spreadingFlows."path_item_id" = NEW."${id_field}"
         ) THEN
-          RAISE EXCEPTION 'recursion detected for link #% in fromInFlow mp #%', NEW."${id_field}", fromInFlow."id"; 
+          RAISE EXCEPTION 'recursion detected for link #% in incomingFlow mp #%', NEW."${id_field}", incomingFlow."id"; 
         END IF;
 
         SELECT gen_random_uuid() INTO positionId;
@@ -103,16 +154,16 @@ export const Trigger = ({
         positionId,
         insertCategory,
         ${groupInsert}
-        ${call(additionalData, `(SELECT concat('fromIn ',NEW."${id_field}",' ', fromInFlow."id"))`)}
+        ${call(additionalData, `(SELECT concat('fromIn ',NEW."${id_field}",' ', incomingFlow."id"))`)}
         FROM "${mpTableName}" AS fromInItemPath
         WHERE
-        fromInItemPath."item_id" = fromInFlow."item_id" AND
-        fromInItemPath."position_id" = fromInFlow."position_id";
+        fromInItemPath."item_id" = incomingFlow."item_id" AND
+        fromInItemPath."position_id" = incomingFlow."position_id";
 
         INSERT INTO "${mpTableName}"
         ("item_id","path_item_id","path_item_depth","root_id","position_id","insert_category","group_id"${call(additionalFields, 'current')})
         VALUES
-        (NEW."${id_field}",NEW."${id_field}",fromInFlow."path_item_depth" + 1,fromInFlow."root_id",positionId,insertCategory,${groupInsert}${call(additionalData, `(SELECT concat('current ',NEW."${id_field}"))`)});
+        (NEW."${id_field}",NEW."${id_field}",incomingFlow."path_item_depth" + 1,incomingFlow."root_id",positionId,insertCategory,${groupInsert}${call(additionalData, `(SELECT concat('current ',NEW."${id_field}"))`)});
       END LOOP;
 
       IF (
@@ -140,34 +191,52 @@ export const Trigger = ({
         currentFlowItem."group_id" = ${groupInsert}
       )
       LOOP
-        FOR toOutFlow
+        FOR outcomingFlow
         IN (
           SELECT
-          DISTINCT ON (toOutFlowItem."item_id") "item_id",toOutFlowItem."path_item_id", toOutFlowItem."path_item_depth", toOutFlowItem."group_id", toOutFlowItem."position_id"
-          FROM "${graphTableName}" as toOutFlowLink, "${mpTableName}" as toOutFlowItem
+          DISTINCT ON (flowItem."item_id") "item_id",flowItem."path_item_id", flowItem."path_item_depth", flowItem."group_id", flowItem."position_id"
+          FROM "${graphTableName}" as flowLink, "${mpTableName}" as flowItem
           WHERE
           (
-            toOutFlowLink."${id_field}" = NEW."${to_field}" AND
-            toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
-            toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-            toOutFlowItem."group_id" = ${groupInsert}
+            -- select: CURRENT to TO.
+            flowLink."${id_field}" = NEW."${to_field}" AND
+            flowItem."item_id" = flowLink."${id_field}" AND
+            flowItem."path_item_id" = flowLink."${id_field}" AND
+            flowItem."group_id" = ${groupInsert}
+            ${wrapAnd(isAllowSpreadCurrentTo)}
           ) OR (
-            toOutFlowLink."${from_field}" = NEW."${id_field}" AND
-            toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
-            toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-            toOutFlowItem."group_id" = ${groupInsert}
+            -- select: CURRENT to FROM.
+            flowLink."${id_field}" = NEW."${from_field}" AND
+            flowItem."item_id" = flowLink."${id_field}" AND
+            flowItem."path_item_id" = flowLink."${id_field}" AND
+            flowItem."group_id" = ${groupInsert}
+            ${wrapAnd(isAllowSpreadCurrentFrom)}
+          ) OR (
+            -- select: CURRENT to OUT
+            flowLink."${from_field}" = NEW."${id_field}" AND
+            flowItem."item_id" = flowLink."${id_field}" AND
+            flowItem."path_item_id" = flowLink."${id_field}" AND
+            flowItem."group_id" = ${groupInsert}
+            ${wrapAnd(isAllowSpreadCurrentFromOut)}
+          ) OR (
+            -- select: CURRENT to IN
+            flowLink."${to_field}" = NEW."${id_field}" AND
+            flowItem."item_id" = flowLink."${id_field}" AND
+            flowItem."path_item_id" = flowLink."${id_field}" AND
+            flowItem."group_id" = ${groupInsert}
+            ${wrapAnd(isAllowSpreadCurrentToIn)}
           ) AND
-          toOutFlowItem."insert_category" != insertCategory
+          flowItem."insert_category" != insertCategory
         )
         LOOP
-          FOR toOutFlowDown
+          FOR outcomingFlowDown
           IN (
             SELECT
             DISTINCT ON (toOutFlowDownItems."item_id") "item_id",toOutFlowDownItems."path_item_id", toOutFlowDownItems."path_item_depth", toOutFlowDownItems."group_id", toOutFlowDownItems."position_id", toOutFlowDownItems."id"
             FROM "${mpTableName}" AS toOutFlowDownItems
             WHERE
-            toOutFlowDownItems."group_id" = toOutFlow."group_id" AND
-            toOutFlowDownItems."path_item_id" = toOutFlow."path_item_id" AND
+            toOutFlowDownItems."group_id" = outcomingFlow."group_id" AND
+            toOutFlowDownItems."path_item_id" = outcomingFlow."path_item_id" AND
             toOutFlowDownItems."insert_category" != insertCategory AND
             toOutFlowDownItems."id" IN (
               SELECT toOutFlowDownPath."id"
@@ -175,12 +244,12 @@ export const Trigger = ({
               "${mpTableName}" AS toOutFlowDownPath,
               "${mpTableName}" AS toOutFlowPath
               WHERE
-              toOutFlowPath."position_id" = toOutFlow."position_id" AND
-              toOutFlowPath."item_id" = toOutFlow."item_id" AND
-              toOutFlowPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+              toOutFlowPath."position_id" = outcomingFlow."position_id" AND
+              toOutFlowPath."item_id" = outcomingFlow."item_id" AND
+              toOutFlowPath."path_item_depth" <= outcomingFlow."path_item_depth" AND
               toOutFlowDownPath."position_id" = toOutFlowDownItems."position_id" AND
               toOutFlowDownPath."item_id" = toOutFlowDownItems."item_id" AND
-              toOutFlowDownPath."path_item_depth" <= toOutFlow."path_item_depth" AND
+              toOutFlowDownPath."path_item_depth" <= outcomingFlow."path_item_depth" AND
               toOutFlowPath."path_item_id" = toOutFlowDownPath."path_item_id" AND
               toOutFlowPath."path_item_depth" = toOutFlowDownPath."path_item_depth"
             )
@@ -191,9 +260,9 @@ export const Trigger = ({
               spreadingFlows."position_id" = currentFlow."position_id" AND
               spreadingFlows."item_id" = currentFlow."item_id" AND
               spreadingFlows."group_id" = currentFlow."group_id" AND
-              spreadingFlows."path_item_id" = toOutFlowDown."item_id"
+              spreadingFlows."path_item_id" = outcomingFlowDown."item_id"
             ) THEN
-              RAISE EXCEPTION 'recursion detected for link #% in spreadingFlow mp #% toOutFlowDown mp #%', NEW."${id_field}", currentFlow."id", toOutFlowDown."id"; 
+              RAISE EXCEPTION 'recursion detected for link #% in spreadingFlow mp #% outcomingFlowDown mp #%', NEW."${id_field}", currentFlow."id", outcomingFlowDown."id"; 
             END IF;
 
             SELECT gen_random_uuid() INTO positionId;
@@ -202,7 +271,7 @@ export const Trigger = ({
             INSERT INTO "${mpTableName}"
             ("item_id","path_item_id","path_item_depth","root_id","position_id","insert_category","group_id"${call(additionalFields, 'currentFlow')})
             SELECT
-            toOutFlowDown."item_id",
+            outcomingFlowDown."item_id",
             spreadingFlows."path_item_id",
             spreadingFlows."path_item_depth",
             spreadingFlows."root_id",
@@ -222,7 +291,7 @@ export const Trigger = ({
             SELECT
             toOutItems."item_id",
             toOutItems."path_item_id",
-            toOutItems."path_item_depth" + currentFlow."path_item_depth" + 1 - toOutFlow."path_item_depth",
+            toOutItems."path_item_depth" + currentFlow."path_item_depth" + 1 - outcomingFlow."path_item_depth",
             currentFlow."root_id",
             positionId,
             insertCategory,
@@ -230,10 +299,10 @@ export const Trigger = ({
             ${call(additionalData, `(SELECT concat('toOut ',NEW."${id_field}"))`)}
             FROM "${mpTableName}" AS toOutItems
             WHERE
-            toOutItems."item_id" = toOutFlowDown."item_id" AND
-            toOutItems."position_id" = toOutFlowDown."position_id" AND
-            toOutItems."path_item_depth" >= toOutFlow."path_item_depth" AND
-            toOutItems."group_id" = toOutFlowDown."group_id";
+            toOutItems."item_id" = outcomingFlowDown."item_id" AND
+            toOutItems."position_id" = outcomingFlowDown."position_id" AND
+            toOutItems."path_item_depth" >= outcomingFlow."path_item_depth" AND
+            toOutItems."group_id" = outcomingFlowDown."group_id";
           END LOOP;
         END LOOP;
       END LOOP;
@@ -242,19 +311,37 @@ export const Trigger = ({
       DELETE FROM "${mpTableName}"
       WHERE
       "root_id" IN (
-        SELECT toOutFlowItem."item_id"
-        FROM "${graphTableName}" as toOutFlowLink, "${mpTableName}" as toOutFlowItem
+        SELECT flowItem."item_id"
+        FROM "${graphTableName}" as flowLink, "${mpTableName}" as flowItem
         WHERE
         (
-          toOutFlowLink."${id_field}" = NEW."${to_field}" AND
-          toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
-          toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-          toOutFlowItem."group_id" = ${groupInsert}
+          -- select: CURRENT to TO.
+          flowLink."${id_field}" = NEW."${to_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadCurrentTo)}
         ) OR (
-          toOutFlowLink."${from_field}" = NEW."${id_field}" AND
-          toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
-          toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-          toOutFlowItem."group_id" = ${groupInsert}
+          -- select: CURRENT to FROM.
+          flowLink."${id_field}" = NEW."${from_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadCurrentFrom)}
+        ) OR (
+          -- select: CURRENT to OUT
+          flowLink."${from_field}" = NEW."${id_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadCurrentFromOut)}
+        ) OR (
+          -- select: CURRENT to IN
+          flowLink."${to_field}" = NEW."${id_field}" AND
+          flowItem."item_id" = flowLink."${id_field}" AND
+          flowItem."path_item_id" = flowLink."${id_field}" AND
+          flowItem."group_id" = ${groupInsert}
+          ${wrapAnd(isAllowSpreadCurrentToIn)}
         )
       );
     ${iteratorInsertEnd}
@@ -278,22 +365,42 @@ export const Trigger = ({
     linkFlow RECORD;
     toOutItems RECORD;
     inFromFlow RECORD;
+    CURRENT RECORD;
   BEGIN
+    CURRENT:=OLD;
     FOR toOutItems
     IN (
-      SELECT toOutFlowItem.*
-      FROM "${graphTableName}" as toOutFlowLink, "${mpTableName}" as toOutFlowItem
+      SELECT flowItem.*
+      FROM "${graphTableName}" as flowLink, "${mpTableName}" as flowItem
       WHERE
       (
-        toOutFlowLink."${id_field}" = OLD."${to_field}" AND
-        toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
-        toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-        toOutFlowItem."group_id" = ${groupDelete}
+        -- select: CURRENT to TO.
+        flowLink."${id_field}" = OLD."${to_field}" AND
+        flowItem."item_id" = flowLink."${id_field}" AND
+        flowItem."path_item_id" = flowLink."${id_field}" AND
+        flowItem."group_id" = ${groupDelete}
+        ${wrapAnd(isAllowSpreadCurrentTo)}
       ) OR (
-        toOutFlowLink."${from_field}" = OLD."${id_field}" AND
-        toOutFlowItem."item_id" = toOutFlowLink."${id_field}" AND
-        toOutFlowItem."path_item_id" = toOutFlowLink."${id_field}" AND
-        toOutFlowItem."group_id" = ${groupDelete}
+        -- select: CURRENT to FROM.
+        flowLink."${id_field}" = OLD."${from_field}" AND
+        flowItem."item_id" = flowLink."${id_field}" AND
+        flowItem."path_item_id" = flowLink."${id_field}" AND
+        flowItem."group_id" = ${groupDelete}
+        ${wrapAnd(isAllowSpreadCurrentFrom)}
+      ) OR (
+        -- select: CURRENT to OUT
+        flowLink."${from_field}" = OLD."${id_field}" AND
+        flowItem."item_id" = flowLink."${id_field}" AND
+        flowItem."path_item_id" = flowLink."${id_field}" AND
+        flowItem."group_id" = ${groupDelete}
+        ${wrapAnd(isAllowSpreadCurrentFromOut)}
+      ) OR (
+        -- select: CURRENT to IN
+        flowLink."${to_field}" = OLD."${id_field}" AND
+        flowItem."item_id" = flowLink."${id_field}" AND
+        flowItem."path_item_id" = flowLink."${id_field}" AND
+        flowItem."group_id" = ${groupDelete}
+        ${wrapAnd(isAllowSpreadCurrentToIn)}
       )
     )
     LOOP
