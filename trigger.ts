@@ -466,7 +466,7 @@ export const Trigger = ({
   
     -- DN
     DELETE FROM "${mpTableName}"
-    WHERE "item_id" = OLD."id";
+    WHERE "item_id" = OLD."id" AND "group_id" = ${groupDelete};
   END;
   $trigger$ LANGUAGE plpgsql;
   CREATE OR REPLACE FUNCTION ${mpTableName}__delete_link__function()
