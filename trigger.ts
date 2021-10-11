@@ -406,9 +406,13 @@ export const Trigger = ({
     LOOP
       IF (
         (
-          SELECT COUNT(*) FROM "${mpTableName}" WHERE "item_id" = "path_item_id" AND "item_id" = OLD."${id_field}"
+          SELECT COUNT(*) FROM "${mpTableName}" WHERE
+          "item_id" = "path_item_id" AND "item_id" = OLD."${id_field}" AND
+          flowItem."group_id" = ${groupDelete}
         ) = (
-          SELECT COUNT(*) FROM "${mpTableName}" WHERE "item_id" = "path_item_id" AND "item_id" = toOutItems."item_id"
+          SELECT COUNT(*) FROM "${mpTableName}" WHERE
+          "item_id" = "path_item_id" AND "item_id" = toOutItems."item_id" AND
+          flowItem."group_id" = ${groupDelete}
         )
       ) THEN
 

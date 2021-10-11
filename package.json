@@ -1,6 +1,6 @@
 {
   "name": "@deepcase/materialized-path",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "license": "ISC",
   "author": "Ivan S Glazunov <ivansglazunov@gmail.com>",
   "homepage": "https://github.com/deepcase/materialized-path",
@@ -21,7 +21,7 @@
   "scripts": {
     "gitpod-prepare": "(yes | sudo apt install screen); (yes | sudo apt install rsync); (yes | sudo apt install net-tools); screen -S docker -d -m sudo docker-up",
     "package:build": "npx tsc --project tsconfig.json && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
-    "package:unbuild": "rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
+    "package:unbuild": "rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts) && (cd ./tests && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
     "package:publish": "npm run package:build; npm publish --access public; npm run package:unbuild",
     "test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; DEBUG='deepcase:*' jest",
     "migrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate up --compiler='ts:@deepcase/hasura/compiler/index.js'",
