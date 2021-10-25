@@ -277,6 +277,7 @@ export const down = async ({
     args: {
       table: GRAPH_TABLE,
       relationship: '_by_item',
+      cascade: true,
     },
   });
   await api.query({
@@ -284,6 +285,7 @@ export const down = async ({
     args: {
       table: GRAPH_TABLE,
       relationship: '_by_path_item',
+      cascade: true,
     },
   });
   await api.query({
@@ -291,6 +293,7 @@ export const down = async ({
     args: {
       table: GRAPH_TABLE,
       relationship: '_by_root',
+      cascade: true,
     },
   });
   await api.query({
@@ -298,6 +301,7 @@ export const down = async ({
     args: {
       table: GRAPH_TABLE,
       relationship: '_by_group',
+      cascade: true,
     },
   });
   await api.query({
@@ -305,6 +309,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'item',
+      cascade: true,
     },
   });
   await api.query({
@@ -312,6 +317,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'path_item',
+      cascade: true,
     },
   });
   await api.query({
@@ -319,6 +325,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'root',
+      cascade: true,
     },
   });
   await api.query({
@@ -326,6 +333,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'by_item',
+      cascade: true,
     },
   });
   await api.query({
@@ -333,6 +341,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'by_path_item',
+      cascade: true,
     },
   });
   await api.query({
@@ -340,6 +349,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'by_position',
+      cascade: true,
     },
   });
   await api.query({
@@ -347,6 +357,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'by_group',
+      cascade: true,
     },
   });
   await api.query({
@@ -354,6 +365,7 @@ export const down = async ({
     args: {
       table: MP_TABLE,
       relationship: 'by_root',
+      cascade: true,
     },
   });
 };

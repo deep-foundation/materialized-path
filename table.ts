@@ -42,6 +42,7 @@ export const down = async ({
         schema: SCHEMA,
         name: MP_TABLE,
       },
+      cascade: true,
     },
   });
   await api.sql(sql`
