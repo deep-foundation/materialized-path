@@ -12,7 +12,7 @@ const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__
 const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 
 export const up = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE, ID_FIELD = 'id',
 } = {}) => {
   await api.query({
     type: 'create_select_permission',
@@ -52,7 +52,7 @@ export const up = async ({
             name: MP_TABLE,
           },
           column_mapping: {
-            id: 'item_id',
+            [ID_FIELD]: 'item_id',
           },
         },
       },
@@ -71,7 +71,7 @@ export const up = async ({
             name: MP_TABLE,
           },
           column_mapping: {
-            id: 'path_item_id',
+            [ID_FIELD]: 'path_item_id',
           },
         },
       },
@@ -90,7 +90,7 @@ export const up = async ({
             name: MP_TABLE,
           },
           column_mapping: {
-            id: 'root_id',
+            [ID_FIELD]: 'root_id',
           },
         },
       },
@@ -109,7 +109,7 @@ export const up = async ({
             name: MP_TABLE,
           },
           column_mapping: {
-            id: 'group_id',
+            [ID_FIELD]: 'group_id',
           },
         },
       },
@@ -128,7 +128,7 @@ export const up = async ({
             name: GRAPH_TABLE,
           },
           column_mapping: {
-            item_id: 'id',
+            item_id: ID_FIELD,
           },
         },
       },
@@ -147,7 +147,7 @@ export const up = async ({
             name: GRAPH_TABLE,
           },
           column_mapping: {
-            path_item_id: 'id',
+            path_item_id: ID_FIELD,
           },
         },
       },
@@ -166,7 +166,7 @@ export const up = async ({
             name: GRAPH_TABLE,
           },
           column_mapping: {
-            root_id: 'id',
+            root_id: ID_FIELD,
           },
         },
       },
@@ -242,7 +242,7 @@ export const up = async ({
             name: GRAPH_TABLE,
           },
           column_mapping: {
-            group_id: 'id',
+            group_id: ID_FIELD,
           },
         },
       },
