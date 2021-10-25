@@ -196,6 +196,6 @@ export const down = async ({
     },
   });
   await api.sql(sql`
-    DROP TABLE ${SCHEMA}."${GRAPH_TABLE}";
+    DROP TABLE ${SCHEMA}."${GRAPH_TABLE}" CASCADE;
   `);
 };

@@ -78,8 +78,8 @@ export const Trigger = ({
   isAllowSpreadCurrentToIn = 'FALSE',
 }: IOptions) => ({
   downFunctionInsertNode: () => sql`
-    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function;
-    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function_core;
+    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function CASCADE;
+    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function_core CASCADE;
   `,
   upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function_core(NEW RECORD)
   RETURNS VOID AS $trigger$
@@ -356,8 +356,8 @@ export const Trigger = ({
   $trigger$ LANGUAGE plpgsql;`,
   
   downFunctionDeleteNode: () => sql`
-    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function;
-    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function_core;
+    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function CASCADE;
+    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function_core CASCADE;
   `,
   upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__delete_link__function_core(OLD RECORD${iteratorDeleteArgumentGet ? `,${iteratorDeleteArgumentGet}` : ''})
   RETURNS VOID AS $trigger$
@@ -482,9 +482,9 @@ export const Trigger = ({
   END;
   $trigger$ LANGUAGE plpgsql;`,
   
-  downTriggerDelete: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__delete_link__trigger ON "${graphTableName}";`,
+  downTriggerDelete: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__delete_link__trigger ON "${graphTableName}" CASCADE;`,
   upTriggerDelete: () => sql`CREATE TRIGGER ${mpTableName}__delete_link__trigger AFTER DELETE ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__delete_link__function();`,
 
-  downTriggerInsert: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__insert_link__trigger ON "${graphTableName}";`,
+  downTriggerInsert: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__insert_link__trigger ON "${graphTableName}" CASCADE;`,
   upTriggerInsert: () => sql`CREATE TRIGGER ${mpTableName}__insert_link__trigger AFTER INSERT ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__insert_link__function();`,
 });
