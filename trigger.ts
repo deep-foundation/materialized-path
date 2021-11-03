@@ -81,7 +81,7 @@ export const Trigger = ({
     DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function CASCADE;
     DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function_core CASCADE;
   `,
-  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function_core(NEW RECORD)
+  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function_core(NEW RECORD, groupId ${id_type} DEFAULT 0)
   RETURNS VOID AS $trigger$
   DECLARE
     insertCategory TEXT;
