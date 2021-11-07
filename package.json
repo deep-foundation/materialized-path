@@ -1,6 +1,6 @@
 {
   "name": "@deep-foundation/materialized-path",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "author": "Ivan S Glazunov <ivansglazunov@gmail.com>",
   "homepage": "https://github.com/deep-foundation/materialized-path",
@@ -30,7 +30,7 @@
     "clear": "(killall screen; rm -rf .migrate; cd node_modules/@deep-foundation/hasura/local/; docker-compose down; docker rm -f $(docker ps -a -q); docker volume rm $(docker volume ls -q))"
   },
   "devDependencies": {
-    "@deep-foundation/hasura": "^0.0.1",
+    "@deep-foundation/hasura": "^0.0.3",
     "jest": "^26.6.3",
     "ts-node": "^10.2.1"
   },
