@@ -1,6 +1,6 @@
-# deepcase materialized-path
+# deep-foundation materialized-path
 
-[![npm version](https://badge.fury.io/js/%40deepcase%2Fmaterialized-path.svg)](https://badge.fury.io/js/%40deepcase%2Fmaterialized-path) 
+[![npm version](https://badge.fury.io/js/%40deep-foundation%2Fmaterialized-path.svg)](https://badge.fury.io/js/%40deep-foundation%2Fmaterialized-path) 
 
 ![Main](main.png)
 
@@ -16,7 +16,7 @@ Associative, multidirectional, multiparental materialized-path realization.
 - [x] **PostgreSQL only for now.**
 - [x] Hasura support, but not required.
 - [x] Grouping support. Not only one tree layer for one storage. You can separate multiple tree conditions with Trigger class options: `iteratorInsertDeclare`, `iteratorInsertBegin`, `iteratorInsertEnd`, `iteratorDeleteArgumentSend`, `iteratorDeleteArgumentGet`, `iteratorDeleteDeclare`, `iteratorDeleteBegin`, `iteratorDeleteEnd`, `groupInsert`, `groupDelete`, `additionalFields`, `additionalData`.
-- [ ] [Benchmarks.](https://github.com/deepcase/materialized-path/issues/6)
+- [ ] [Benchmarks.](https://github.com/deep-foundation/materialized-path/issues/6)
 
 ## example
 
