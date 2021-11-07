@@ -1,4 +1,4 @@
-import { HasuraApi } from '@deepcase/hasura/api';
+import { HasuraApi } from '@deep-foundation/hasura/api';
 import { Trigger } from './trigger';
 
 const api = new HasuraApi({

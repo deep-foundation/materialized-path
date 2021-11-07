@@ -1,4 +1,4 @@
-import { generateApolloClient } from '@deepcase/hasura/client';
+import { generateApolloClient } from '@deep-foundation/hasura/client';
 
 export const client = generateApolloClient({
   client: 'materialized-path-test',

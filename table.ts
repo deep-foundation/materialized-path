@@ -1,5 +1,5 @@
-import { HasuraApi } from '@deepcase/hasura/api';
-import { sql } from '@deepcase/hasura/sql';
+import { HasuraApi } from '@deep-foundation/hasura/api';
+import { sql } from '@deep-foundation/hasura/sql';
 import { Trigger } from './trigger';
 
 const api = new HasuraApi({
