@@ -8,7 +8,7 @@ import { client } from '../client';
 import fs from 'fs';
 
 const chance = new Chance();
-const debug = Debug('deepcase:materialized-path:test');
+const debug = Debug('materialized-path:test');
 
 const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';

@@ -4,7 +4,7 @@ import { gql } from 'apollo-boost';
 import forEach from 'lodash/forEach';
 import assert from 'assert';
 
-const debug = Debug('deepcase:materialized-path:check');
+const debug = Debug('materialized-path:check');
 
 const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
