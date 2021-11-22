@@ -132,11 +132,11 @@ export const Trigger = ({
         )
       )
       LOOP
+        -- CURRENT recursion UP?
         IF EXISTS (
           SELECT * FROM "${mpTableName}" AS spreadingFlows WHERE
           spreadingFlows."position_id" = incomingFlow."position_id" AND
           spreadingFlows."item_id" = incomingFlow."item_id" AND
-          spreadingFlows."group_id" = incomingFlow."group_id" AND
           spreadingFlows."path_item_id" = NEW."${id_field}"
         ) THEN
           RAISE EXCEPTION 'recursion detected for link #% in incomingFlow mp #%', NEW."${id_field}", incomingFlow."id"; 
@@ -165,6 +165,10 @@ export const Trigger = ({
         VALUES
         (NEW."${id_field}",NEW."${id_field}",incomingFlow."path_item_depth" + 1,incomingFlow."root_id",positionId,insertCategory,${groupInsert}${call(additionalData, `(SELECT concat('current ',NEW."${id_field}"))`)});
       END LOOP;
+
+      -- CURRENT has ALL spreaded mp rows now
+
+      -- IF NOT PARENT FLOWS - INSERT ITEM ROOT
 
       IF (
         SELECT COUNT("id") = 0
@@ -255,6 +259,8 @@ export const Trigger = ({
             )
           )
           LOOP
+            -- UP recursion DOWN?
+
             IF EXISTS (
               SELECT * FROM "${mpTableName}" AS spreadingFlows WHERE
               spreadingFlows."position_id" = currentFlow."position_id" AND

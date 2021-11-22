@@ -31,8 +31,8 @@ const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
     insert_links: insert_${GRAPH_TABLE}(objects: { type_id: $type_id }) { returning { id } }
   }`, variables: { type_id } });
   if (result?.errors) {
+    console.error('insertNode', type_id);
     throw result?.errors;
-    console.error(result?.errors);
   }
   const id = result?.data?.insert_links?.returning?.[0]?.id;
   debug(`insert node #${id}`);
@@ -43,8 +43,8 @@ const insertNodes = async (nodes) => {
     insert_links: insert_${GRAPH_TABLE}(objects: $objects) { returning { id } }
   }`, variables: { objects: nodes } });
   if (result?.errors) {
+    console.error('insertNodes', nodes);
     throw result?.errors;
-    console.error(result?.errors);
   }
   const returning = result?.data?.insert_links?.returning || [];
   const ids = returning.map(({id}) => id);
@@ -56,8 +56,8 @@ const insertLink = async (fromId: number, toId: number, type_id: number, idType:
     insert_links: insert_${GRAPH_TABLE}(objects: { from_id: $fromId, to_id: $toId, type_id: $type_id }) { returning { id } }
   }`, variables: { fromId, toId, type_id } });
   if (result?.errors) {
+    console.error('insertNodes', { fromId, toId, type_id });
     throw result?.errors;
-    console.error(result?.errors);
   }
   const id = result?.data?.insert_links?.returning?.[0]?.id;
   debug(`insert link #${id} (#${fromId} -> #${toId})`);
@@ -69,8 +69,8 @@ const clear = async (type_id: number, idType: string = ID_TYPE) => {
     delete_links: delete_${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { affected_rows }
   }`, variables: { type_id } });
   if (result?.errors) {
+    console.error('clear', { type_id });
     throw result?.errors;
-    console.error(result?.errors);
   }
   debug(`clear type_id #${type_id}`);
 };
@@ -79,8 +79,8 @@ const deleteNode = async (id: number, idType: string = ID_TYPE) => {
     delete_links: delete_${GRAPH_TABLE}(where: { id: { _eq: $id } }) { returning { id } }
   }`, variables: { id } });
   if (result?.errors) {
+    console.error('deleteNode', { id });
     throw result?.errors;
-    console.error(result?.errors);
   }
   debug(`delete node #${id}`);
   return result?.data?.delete_links?.returning?.[0]?.id;
@@ -158,8 +158,10 @@ const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
 let type_id;
 
 beforeAll(async () => {
-  await clear(type_id);
-  await deleteNode(type_id);
+  if (type_id) {
+    await clear(type_id);
+    await deleteNode(type_id);
+  }
   jest.setTimeout(1000000);
 }); 
 (it)('prepare', async () => {
@@ -514,4 +516,37 @@ it('deeplinks demo tree', async () => {
   await check({
     n0, n1, n2, n3, n4, n5, n6, l0, l1, l2, l3, l4, l5,
   }, type_id);
+});
+itDelay();
+it('recursive', async () => {
+  debug('recursive');
+  await clear(type_id);
+  const a = await insertNode(type_id, 'node');
+  const b = await insertNode(type_id, 'node');
+  const c = await insertLink(b, a, type_id, 'down');
+  let errored = false;
+  try {
+    const d = await insertLink(a, b, type_id, 'down');
+  } catch(error) {
+    errored = true;
+  }
+  if (!errored) throw new Error('Recursion error not exists');
+});
+itDelay();
+it('recursiveSameRoot', async () => {
+  debug('recursive');
+  await clear(type_id);
+  const r = await insertNode(type_id, 'node');
+  const a = await insertNode(type_id, 'node');
+  const b = await insertNode(type_id, 'node');
+  const x = await insertLink(r, a, type_id, 'down');
+  const y = await insertLink(r, b, type_id, 'down');
+  const c = await insertLink(b, a, type_id, 'down');
+  let errored = false;
+  try {
+    const d = await insertLink(a, b, type_id, 'down');
+  } catch(error) {
+    errored = true;
+  }
+  if (!errored) throw new Error('Recursion error not exists');
 });
