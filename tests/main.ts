@@ -550,3 +550,22 @@ it('recursiveSameRoot', async () => {
   }
   if (!errored) throw new Error('Recursion error not exists');
 });
+itDelay();
+it('recursiveLong', async () => {
+  debug('recursive');
+  await clear(type_id);
+  const a = await insertNode(type_id);
+  const b = await insertNode(type_id);
+  const c = await insertNode(type_id);
+  const d = await insertNode(type_id);
+  const x = await insertLink(a, b, type_id);
+  const y = await insertLink(b, c, type_id);
+  const z = await insertLink(c, d, type_id);
+  let errored = false;
+  try {
+    const r = await insertLink(d, a, type_id);
+  } catch(error) {
+    errored = true;
+  }
+  if (!errored) throw new Error('Recursion error not exists');
+});
