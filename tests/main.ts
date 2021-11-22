@@ -521,12 +521,12 @@ itDelay();
 it('recursive', async () => {
   debug('recursive');
   await clear(type_id);
-  const a = await insertNode(type_id, 'node');
-  const b = await insertNode(type_id, 'node');
-  const c = await insertLink(b, a, type_id, 'down');
+  const a = await insertNode(type_id);
+  const b = await insertNode(type_id);
+  const c = await insertLink(b, a, type_id);
   let errored = false;
   try {
-    const d = await insertLink(a, b, type_id, 'down');
+    const d = await insertLink(a, b, type_id);
   } catch(error) {
     errored = true;
   }
@@ -536,15 +536,15 @@ itDelay();
 it('recursiveSameRoot', async () => {
   debug('recursive');
   await clear(type_id);
-  const r = await insertNode(type_id, 'node');
-  const a = await insertNode(type_id, 'node');
-  const b = await insertNode(type_id, 'node');
-  const x = await insertLink(r, a, type_id, 'down');
-  const y = await insertLink(r, b, type_id, 'down');
-  const c = await insertLink(b, a, type_id, 'down');
+  const r = await insertNode(type_id);
+  const a = await insertNode(type_id);
+  const b = await insertNode(type_id);
+  const x = await insertLink(r, a, type_id);
+  const y = await insertLink(r, b, type_id);
+  const c = await insertLink(b, a, type_id);
   let errored = false;
   try {
-    const d = await insertLink(a, b, type_id, 'down');
+    const d = await insertLink(a, b, type_id);
   } catch(error) {
     errored = true;
   }
