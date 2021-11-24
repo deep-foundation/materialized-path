@@ -4,6 +4,7 @@ import { Trigger } from '../trigger';
 
 import { up as upTable, down as downTable } from '../table';
 import { up as upRels, down as downRels } from '../relationships';
+import { up as upPerms, down as downPerms } from '../permissions';
 
 const api = new HasuraApi({
   path: process.env.MIGRATIONS_HASURA_PATH,
@@ -108,34 +109,9 @@ export const up = async ({
       }
     }
   });
-  await upTable({ SCHEMA, MP_TABLE, customColumns: ',custom TEXT' });
-  await api.query({
-    type: 'create_select_permission',
-    args: {
-      table: MP_TABLE,
-      role: 'guest',
-      permission: {
-        columns: '*',
-        filter: {},
-        limit: 999,
-        allow_aggregations: true
-      }
-    }
-  });
-  await api.query({
-    type: 'create_select_permission',
-    args: {
-      table: MP_TABLE,
-      role: 'user',
-      permission: {
-        columns: '*',
-        filter: {},
-        limit: 999,
-        allow_aggregations: true
-      }
-    }
-  });
-  await upRels({ SCHEMA, MP_TABLE, GRAPH_TABLE });
+  await upTable({ SCHEMA, MP_TABLE, customColumns: ',custom TEXT', api });
+  await upPerms({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
+  await upRels({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
   await api.sql(trigger.upFunctionInsertNode());
   await api.sql(trigger.upFunctionDeleteNode());
   await api.sql(trigger.upTriggerDelete());
@@ -184,8 +160,9 @@ export const down = async ({
   await api.sql(trigger.downTriggerInsert());
   await api.sql(trigger.downFunctionInsertNode());
   await api.sql(trigger.downFunctionDeleteNode());
-  await downRels({ SCHEMA, MP_TABLE, GRAPH_TABLE });
-  await downTable({ SCHEMA, MP_TABLE });
+  await downPerms({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
+  await downRels({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
+  await downTable({ SCHEMA, MP_TABLE, api });
   await api.query({
     type: 'untrack_table',
     args: {

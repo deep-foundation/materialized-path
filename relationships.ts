@@ -1,19 +1,16 @@
 import { HasuraApi } from '@deep-foundation/hasura/api';
 import { Trigger } from './trigger';
 
-const api = new HasuraApi({
-  path: process.env.MIGRATIONS_HASURA_PATH,
-  ssl: !!+process.env.MIGRATIONS_HASURA_SSL,
-  secret: process.env.MIGRATIONS_HASURA_SECRET,
-});
-
 const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
 const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 
 export const up = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE, ID_FIELD = 'id',
-} = {}) => {
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE, ID_FIELD = 'id', api
+}: {
+  SCHEMA?: string; MP_TABLE?: string; GRAPH_TABLE?: string; ID_FIELD?: string;
+  api: HasuraApi;
+}) => {
   await api.query({
     type: 'create_select_permission',
     args: {
@@ -270,8 +267,11 @@ export const up = async ({
 };
 
 export const down = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE
-} = {}) => {
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, GRAPH_TABLE = DEFAULT_GRAPH_TABLE, api
+}: {
+  SCHEMA?: string; MP_TABLE?: string; GRAPH_TABLE?: string; ID_FIELD?: string;
+  api: HasuraApi;
+}) => {
   await api.query({
     type: 'drop_relationship',
     args: {

@@ -2,20 +2,17 @@ import { HasuraApi } from '@deep-foundation/hasura/api';
 import { sql } from '@deep-foundation/hasura/sql';
 import { Trigger } from './trigger';
 
-const api = new HasuraApi({
-  path: process.env.MIGRATIONS_HASURA_PATH,
-  ssl: !!+process.env.MIGRATIONS_HASURA_SSL,
-  secret: process.env.MIGRATIONS_HASURA_SECRET,
-});
-
 const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
 const DEFAULT_GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const DEFAULT_ID_TYPE_SQL = process.env.MIGRATIONS_ID_TYPE_SQL || 'integer';
 
 export const up = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, ID_TYPE = DEFAULT_ID_TYPE_SQL, customColumns = ''
-} = {}) => {
+  api, SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, ID_TYPE = DEFAULT_ID_TYPE_SQL, customColumns = ''
+}: {
+  api: HasuraApi;
+  SCHEMA?: string; MP_TABLE?: string; ID_TYPE?: string; customColumns: string;
+}) => {
   await api.sql(sql`
     CREATE TABLE ${SCHEMA}."${MP_TABLE}" (id ${ID_TYPE} PRIMARY KEY,item_id ${ID_TYPE},path_item_id ${ID_TYPE},path_item_depth ${ID_TYPE},root_id ${ID_TYPE},position_id text DEFAULT ${SCHEMA}.gen_random_uuid(),group_id ${ID_TYPE},insert_category TEXT${customColumns});
     CREATE SEQUENCE ${SCHEMA}.${MP_TABLE}_id_seq
@@ -33,8 +30,10 @@ export const up = async ({
 };
 
 export const down = async ({
-  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE
-} = {}) => {
+  SCHEMA = DEFAULT_SCHEMA, MP_TABLE = DEFAULT_MP_TABLE, api
+}: {
+  SCHEMA?: string; MP_TABLE?: string; api: HasuraApi;
+}) => {
   await api.query({
     type: 'untrack_table',
     args: {
