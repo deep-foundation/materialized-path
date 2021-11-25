@@ -14,7 +14,7 @@ export const up = async ({
   SCHEMA?: string; MP_TABLE?: string; ID_TYPE?: string; customColumns: string;
 }) => {
   await api.sql(sql`
-    CREATE TABLE ${SCHEMA}."${MP_TABLE}" (id ${ID_TYPE} PRIMARY KEY,item_id ${ID_TYPE},path_item_id ${ID_TYPE},path_item_depth ${ID_TYPE},root_id ${ID_TYPE},position_id text DEFAULT ${SCHEMA}.gen_random_uuid(),group_id ${ID_TYPE},insert_category TEXT${customColumns});
+    CREATE TABLE ${SCHEMA}."${MP_TABLE}" (id ${ID_TYPE} PRIMARY KEY,item_id ${ID_TYPE},path_item_id ${ID_TYPE},path_item_depth ${ID_TYPE},root_id ${ID_TYPE},position_id text DEFAULT ${SCHEMA}.gen_random_uuid(),parent_cache TEXT,group_id ${ID_TYPE}, insert_category TEXT${customColumns});
     CREATE SEQUENCE ${SCHEMA}.${MP_TABLE}_id_seq
     AS ${ID_TYPE} START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
     ALTER SEQUENCE ${SCHEMA}.${MP_TABLE}_id_seq OWNED BY ${SCHEMA}.${MP_TABLE}.id;
