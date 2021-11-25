@@ -125,6 +125,8 @@ export const up = async ({
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_hash ON ${GRAPH_TABLE} USING hash (type_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_btree ON ${GRAPH_TABLE} USING btree (type_id); `);
 
+  await api.sql(`CREATE INDEX ${GRAPH_TABLE}__source_id_target_id_type_id__btree ON ${GRAPH_TABLE} ("_source_id", "_target_id", "_type_id");`);
+
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__id_hash ON ${MP_TABLE} USING hash (id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_hash ON ${MP_TABLE} USING hash (item_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_btree ON ${MP_TABLE} USING btree (item_id);`);
@@ -140,6 +142,8 @@ export const up = async ({
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__group_id_btree ON ${MP_TABLE} USING btree (group_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__insert_category_hash ON ${MP_TABLE} USING hash (insert_category);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__insert_category_btree ON ${MP_TABLE} USING btree (insert_category);`);
+
+  await api.sql(`CREATE INDEX ${MP_TABLE}__path_item_id_item_id_group_id__btree ON ${MP_TABLE} ("path_item_id", "item_id", "group_id");`);
 };
 
 export const down = async ({
