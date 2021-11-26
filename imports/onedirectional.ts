@@ -15,18 +15,7 @@ const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
 const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
-const DELAY = +process.env.DELAY || 0;
-const delay = time => new Promise(res => setTimeout(res, time));
-
-const itDelay = () => {
-  if (DELAY) {
-    (it)('delay', async () => {
-      await delay(DELAY);
-    });
-  }
-};
-
-const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
+export const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertNode($type_id: ${idType}) {
     insert_links: insert_${GRAPH_TABLE}(objects: { type_id: $type_id }) { returning { id } }
   }`, variables: { type_id } });
@@ -38,7 +27,7 @@ const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
   debug(`insert node #${id}`);
   return id;
 };
-const insertNodes = async (nodes) => {
+export const insertNodes = async (nodes) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertNodes($objects: [${GRAPH_TABLE}_insert_input!]!) {
     insert_links: insert_${GRAPH_TABLE}(objects: $objects) { returning { id } }
   }`, variables: { objects: nodes } });
@@ -51,7 +40,7 @@ const insertNodes = async (nodes) => {
   debug(`insert nodes ${ids.length}`);
   return ids;
 };
-const insertLink = async (fromId: number, toId: number, type_id: number, idType: string = ID_TYPE) => {
+export const insertLink = async (fromId: number, toId: number, type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertLink($fromId: ${idType}, $toId: ${idType}, $type_id: ${idType}) {
     insert_links: insert_${GRAPH_TABLE}(objects: { from_id: $fromId, to_id: $toId, type_id: $type_id }) { returning { id } }
   }`, variables: { fromId, toId, type_id } });
@@ -63,7 +52,7 @@ const insertLink = async (fromId: number, toId: number, type_id: number, idType:
   debug(`insert link #${id} (#${fromId} -> #${toId})`);
   return id;
 };
-const clear = async (type_id: number, idType: string = ID_TYPE) => {
+export const clear = async (type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation Clear($type_id: ${idType}) {
     delete_links__mp: delete_${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { affected_rows }
     delete_links: delete_${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { affected_rows }
@@ -74,7 +63,7 @@ const clear = async (type_id: number, idType: string = ID_TYPE) => {
   }
   debug(`clear type_id #${type_id}`);
 };
-const deleteNode = async (id: number, idType: string = ID_TYPE) => {
+export const deleteNode = async (id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation DeleteNode($id: ${idType}) {
     delete_links: delete_${GRAPH_TABLE}(where: { id: { _eq: $id } }) { returning { id } }
   }`, variables: { id } });
@@ -86,7 +75,7 @@ const deleteNode = async (id: number, idType: string = ID_TYPE) => {
   return result?.data?.delete_links?.returning?.[0]?.id;
 };
 
-const generateTree = (initialId, count = 1000) => {
+export const generateTree = (initialId, count = 1000) => {
   let i = initialId + 1;
   const paths = { [initialId]: [initialId] };
   const array: any[] = [{ id: initialId }];
@@ -106,7 +95,7 @@ const generateTree = (initialId, count = 1000) => {
   return { array, paths };
 };
 
-const findNoParent = async (notId: number, type_id: number, idType: string = ID_TYPE) => {
+export const findNoParent = async (notId: number, type_id: number, idType: string = ID_TYPE) => {
   const result = await client.query({ query: gql`query FIND_NO_PARENT($notId: ${idType}, $type_id: ${idType}) {
     nodes: ${GRAPH_TABLE}(where: {
       from_id: { _is_null: true },
@@ -118,7 +107,7 @@ const findNoParent = async (notId: number, type_id: number, idType: string = ID_
   return { nodes: result?.data?.nodes || [] };
 };
 
-const countMp = async () => {
+export const countMp = async () => {
   const result = await client.query({ query: gql`query COUNT_MP {
     mp_example__links__mp_aggregate {
       aggregate {
@@ -129,7 +118,7 @@ const countMp = async () => {
   return result?.data?.mp_example__links__mp_aggregate?.aggregate?.count;
 };
 
-const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
+export const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
   const nodes = array.filter(a => !a.from_id && !a.to_id);
   let founded = 0;
   let skipped = 0;
@@ -157,56 +146,52 @@ const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
 
 let type_id;
 
-beforeAll(async () => {
+export const beforeAllHandler = async () => {
   if (type_id) {
     await clear(type_id);
     await deleteNode(type_id);
   }
-  jest.setTimeout(1000000);
-}); 
-(it)('prepare', async () => {
+  if (global?.jest) jest.setTimeout(1000000);
+}; 
+export const prepare = async () => {
   const ids = await insertNodes({});
   type_id = ids[0];
   debug('prepare', ids);
-});
+};
 
-it('+1', async () => {
+export const testPlus1 = (needCheck = true) => async () => {
   debug('+1');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
-  await check({ a, b }, type_id);
-});
-itDelay();
-it('-1', async () => {
+  if (needCheck) await check({ a, b }, type_id);
+};
+export const testMinus1 = (needCheck = true) => async () => {
   debug('-1');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   await deleteNode(a);
-  await check({ a, b }, type_id);
-});
-itDelay();
-it('+2', async () => {
+  if (needCheck) await check({ a, b }, type_id);
+};
+export const testPlus2 = (needCheck = true) => async () => {
   debug('+2');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   const c = await insertLink(a, b, type_id);
-  await check({ a, b, c }, type_id);
-});
-itDelay();
-it('-2', async () => {
+  if (needCheck) await check({ a, b, c }, type_id);
+};
+export const testMinus2 = (needCheck = true) => async () => {
   debug('-2');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   const c = await insertLink(a, b, type_id);
   await deleteNode(c);
-  await check({ a, b, c }, type_id);
-});
-itDelay();
-it('+3', async () => {
+  if (needCheck) await check({ a, b, c }, type_id);
+};
+export const testPlus3 = (needCheck = true) => async () => {
   debug('+3');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -214,17 +199,16 @@ it('+3', async () => {
   const c = await insertLink(a, b, type_id);
   const d = await insertNode(type_id);
   const e = await insertLink(b, d, type_id);
-  await check({ a, b, c, d, e }, type_id);
-  await checkManual([
+  if (needCheck) await check({ a, b, c, d, e }, type_id);
+  if (needCheck) await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
     [d,0,0,type_id,[[a,a],[a,c],[a,b],[a,e],[a,d]]],
     [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-itDelay();
-it('-3', async () => {
+};
+export const testMinus3 = (needCheck = true) => async () => {
   debug('-3');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -233,16 +217,15 @@ it('-3', async () => {
   const d = await insertNode(type_id);
   const e = await insertLink(b, d, type_id);
   await deleteNode(e);
-  await check({ a, b, c, d, e }, type_id);
-  await checkManual([
+  if (needCheck) await check({ a, b, c, d, e }, type_id);
+  if (needCheck) await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
     [d,0,0,type_id,[[d,d]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-itDelay();
-it('+4', async () => {
+};
+export const testPlus4 = (needCheck = true) => async () => {
   debug('+4');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -252,10 +235,9 @@ it('+4', async () => {
   const e = await insertLink(b, d, type_id);
   const x = await insertNode(type_id);
   const y = await insertLink(x, a, type_id);
-  await check({ a, b, c, d, e, x, y }, type_id);
-});
-itDelay();
-it('-4', async () => {
+  if (needCheck) await check({ a, b, c, d, e, x, y }, type_id);
+};
+export const testMinus4 = (needCheck = true) => async () => {
   debug('-4');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -266,8 +248,8 @@ it('-4', async () => {
   const x = await insertNode(type_id);
   const y = await insertLink(x, a, type_id);
   await deleteNode(y);
-  await check({ a, b, c, d, e, x, y }, type_id);
-  await checkManual([
+  if (needCheck) await check({ a, b, c, d, e, x, y }, type_id);
+  if (needCheck) await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
@@ -275,9 +257,8 @@ it('-4', async () => {
     [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
     [x,0,0,type_id,[[x,x]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-itDelay();
-it('+5', async () => {
+};
+export const testPlus5 = (needCheck = true) => async () => {
   debug('+5');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -287,8 +268,8 @@ it('+5', async () => {
   const e = await insertLink(b, d, type_id);
   const x = await insertNode(type_id);
   const y = await insertLink(x, b, type_id);
-  await check({ a, b, c, d, e, x, y }, type_id);
-  await checkManual([
+  if (needCheck) await check({ a, b, c, d, e, x, y }, type_id);
+  if (needCheck) await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b],[x,x],[x,y],[x,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
@@ -297,9 +278,8 @@ it('+5', async () => {
     [x,0,0,type_id,[[x,x]]],
     [y,x,b,type_id,[[x,x],[x,y]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-itDelay();
-it('-5', async () => {
+};
+export const testMinus5 = (needCheck = true) => async () => {
   debug('-5');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -310,8 +290,8 @@ it('-5', async () => {
   const x = await insertNode(type_id);
   const y = await insertLink(x, b, type_id);
   await deleteNode(y);
-  await check({ a, b, c, d, e, x, y }, type_id);
-  await checkManual([
+  if (needCheck) await check({ a, b, c, d, e, x, y }, type_id);
+  if (needCheck) await checkManual([
     [a,0,0,type_id,[[a,a]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
@@ -319,9 +299,8 @@ it('-5', async () => {
     [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
     [x,0,0,type_id,[[x,x]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-itDelay();
-it('+7', async () => {
+};
+export const testPlus7 = (needCheck = true) => async () => {
   debug('+7');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -330,10 +309,9 @@ it('+7', async () => {
   const d = await insertNode(type_id);
   const e = await insertLink(b, d, type_id);
   const y = await insertLink(a, d, type_id);
-  await check({ a, b, c, d, e, y }, type_id);
-});
-itDelay();
-it('-7', async () => {
+  if (needCheck) await check({ a, b, c, d, e, y }, type_id);
+};
+export const testMinus7 = (needCheck = true) => async () => {
   debug('-7');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -343,10 +321,9 @@ it('-7', async () => {
   const e = await insertLink(b, d, type_id);
   const y = await insertLink(a, d, type_id);
   await deleteNode(y);
-  await check({ a, b, c, d, e, y }, type_id);
-});
-itDelay();
-it('tree', async () => {
+  if (needCheck) await check({ a, b, c, d, e, y }, type_id);
+};
+export const testtree = (needCheck = true) => async () => {
   debug('tree');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -354,10 +331,9 @@ it('tree', async () => {
   const ids = await insertNodes(array.map(({ id, ...a }) => ({ ...a, type_id })));
   const ns = {};
   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
-  await check({ a, ...ns }, type_id);
-});
-itDelay();
-it('multiple ways', async () => {
+  if (needCheck) await check({ a, ...ns }, type_id);
+};
+export const testMultipleWays = (needCheck = true) => async () => {
   debug('multiple ways');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -370,9 +346,9 @@ it('multiple ways', async () => {
   const m = await insertLink(b, d, type_id);
   const n = await insertLink(b, d, type_id);
   const f = await insertLink(d, c, type_id);
-  await check({ a, b, c, d, x, y, r, m, n, f }, type_id);
-});
-it('multiparental tree', async () => {
+  if (needCheck) await check({ a, b, c, d, x, y, r, m, n, f }, type_id);
+};
+export const testMultiparentalTree = (needCheck = true) => async () => {
   debug('multiparental tree');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -381,24 +357,24 @@ it('multiparental tree', async () => {
   const ns = {};
   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
   await generateMultiparentalTree(array, ns, 30);
-  await check({ a, ...ns }, type_id);
-});
-it('8', async () => {
+  if (needCheck) await check({ a, ...ns }, type_id);
+};
+export const test8 = (needCheck = true) => async () => {
   debug('8');
   await clear(type_id);
   const w = await insertNode(type_id);
   const a = w+2;
   const b = w+3;
   const c = await insertLink(a, b, type_id);
-  await check({ w }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
   await insertNode(type_id);
-});
-it('9', async () => {
+};
+export const test9 = (needCheck = true) => async () => {
   debug('9');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -406,15 +382,15 @@ it('9', async () => {
   const b = w+3;
   const c = await insertLink(a, b, type_id);
   await insertNode(type_id);
-  await check({ w, c, a }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w, c, a }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
     [a,0,0,type_id,[[a,a]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
-});
-it('10', async () => {
+};
+export const test10 = (needCheck = true) => async () => {
   debug('10');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -422,15 +398,15 @@ it('10', async () => {
   const b = w+2;
   const c = await insertLink(a, b, type_id);
   await insertNode(type_id);
-  await check({ w, c, b }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w, c, b }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
     [b,0,0,type_id,[[c,c],[c,b]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
-});
-it('11', async () => {
+};
+export const test11 = (needCheck = true) => async () => {
   debug('11');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -439,15 +415,15 @@ it('11', async () => {
   const c = await insertLink(a, b, type_id);
   await insertNode(type_id);
   await insertNode(type_id);
-  await check({ w, c, b, a }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w, c, b, a }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[a,a],[a,c]]],
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [a,0,0,type_id,[[a,a]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-it('12', async () => {
+};
+export const test12 = (needCheck = true) => async () => {
   debug('12');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -457,14 +433,14 @@ it('12', async () => {
   await insertNode(type_id);
   await insertNode(type_id);
   await deleteNode(a);
-  await check({ w, c, b, a }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w, c, b, a }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
     [b,0,0,type_id,[[c,c], [c,b]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-it('13', async () => {
+};
+export const test13 = (needCheck = true) => async () => {
   debug('13');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -475,13 +451,13 @@ it('13', async () => {
   await insertNode(type_id);
   await deleteNode(a);
   await deleteNode(b);
-  await check({ w, c, b, a }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w, c, b, a }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
-});
-it('14', async () => {
+};
+export const test14 = (needCheck = true) => async () => {
   debug('14');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -490,14 +466,14 @@ it('14', async () => {
   const c = await insertLink(a, b, type_id);
   await insertNode(type_id);
   await deleteNode(c);
-  await check({ w, c, b }, type_id);
-  await checkManual([
+  if (needCheck) await check({ w, c, b }, type_id);
+  if (needCheck) await checkManual([
     [w,0,0,type_id,[[w,w]]],
     [b,0,0,type_id,[[b,b]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
-});
-it('deeplinks demo tree', async () => {
+};
+export const testDeeplinksDemoTree = (needCheck = true) => async () => {
   debug('deeplinks demo tree');
   await clear(type_id);
   const n0 = await insertNode(type_id);
@@ -513,12 +489,11 @@ it('deeplinks demo tree', async () => {
   const l3 = await insertLink(n1, n4, type_id);
   const l4 = await insertLink(n2, n5, type_id);
   const l5 = await insertLink(n2, n6, type_id);
-  await check({
+  if (needCheck) await check({
     n0, n1, n2, n3, n4, n5, n6, l0, l1, l2, l3, l4, l5,
   }, type_id);
-});
-itDelay();
-it('recursive', async () => {
+};
+export const testRecursive = (needCheck = true) => async () => {
   debug('recursive');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -531,9 +506,8 @@ it('recursive', async () => {
     errored = true;
   }
   if (!errored) throw new Error('Recursion error not exists');
-});
-itDelay();
-it('recursiveSameRoot', async () => {
+};
+export const testRecursiveSameRoot = (needCheck = true) => async () => {
   debug('recursive');
   await clear(type_id);
   const r = await insertNode(type_id);
@@ -549,9 +523,8 @@ it('recursiveSameRoot', async () => {
     errored = true;
   }
   if (!errored) throw new Error('Recursion error not exists');
-});
-itDelay();
-it('recursiveLong', async () => {
+};
+export const testRecursiveLong = (needCheck = true) => async () => {
   debug('recursive');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -568,4 +541,4 @@ it('recursiveLong', async () => {
     errored = true;
   }
   if (!errored) throw new Error('Recursion error not exists');
-});
+};
