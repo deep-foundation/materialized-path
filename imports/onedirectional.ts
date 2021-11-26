@@ -144,7 +144,7 @@ export const generateMultiparentalTree = async (array, nodesHash, count = 100) =
   debug(`multiparental tree founded: ${founded}, skipped: ${skipped}`);
 };
 
-let type_id;
+export let type_id;
 
 export const beforeAllHandler = async () => {
   if (type_id) {
@@ -152,11 +152,13 @@ export const beforeAllHandler = async () => {
     await deleteNode(type_id);
   }
   if (global?.jest) jest.setTimeout(1000000);
+  return type_id;
 }; 
 export const prepare = async () => {
   const ids = await insertNodes({});
   type_id = ids[0];
   debug('prepare', ids);
+  return type_id;
 };
 
 export const testPlus1 = (needCheck = true) => async () => {

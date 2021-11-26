@@ -98,19 +98,20 @@ export const countMp = async () => {
   return result?.data?.mp_example__links__mp_aggregate?.aggregate?.count;
 };
 
-let type_id;
+export let type_id;
 
 export const beforeAllHandler = async () => {
   if (type_id) {
     await clear(type_id);
     await deleteNode(type_id);
   }
-  jest.setTimeout(1000000);
+  if (global.jest) jest.setTimeout(1000000);
 }; 
 export const prepare = async () => {
   const ids = await insertNodes({});
   type_id = ids[0];
   debug('prepare', ids);
+  return type_id;
 };
 export const testPlus15 = (needCheck = true) => async () => {
   debug('+15');
