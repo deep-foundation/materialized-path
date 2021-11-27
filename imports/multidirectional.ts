@@ -188,3 +188,51 @@ export const testRecursiveSameRoot = (needCheck = true) => async () => {
   }
   if (!errored) throw new Error('Recursion error not exists');
 };
+export const testSeparation1 = (needCheck = true) => async () => {
+  debug('testSeparation1');
+  await clear(type_id);
+  const a = await insertNode(type_id, 'node');
+  const b = await insertNode(type_id, 'node');
+  const c = await insertNode(type_id, 'node');
+  const d = await insertNode(type_id, 'node');
+  const e = await insertNode(type_id, 'node');
+  const x = await insertLink(a, b, type_id, 'down');
+  const y = await insertLink(b, c, type_id, 'down');
+  const z = await insertLink(c, d, type_id, 'down');
+  const w = await insertLink(d, e, type_id, 'down');
+  if (needCheck) await checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,x],[a,b]]],
+    [c,0,0,type_id,[[a,a],[a,x],[a,b],[a,y],[a,c]]],
+    [d,0,0,type_id,[[a,a],[a,x],[a,b],[a,y],[a,c],[a,z],[a,d]]],
+    [e,0,0,type_id,[[a,a],[a,x],[a,b],[a,y],[a,c],[a,z],[a,d],[a,w],[a,e]]],
+    [x,a,b,type_id,[[a,a],[a,x]]],
+    [y,b,c,type_id,[[a,a],[a,x],[a,b],[a,y]]],
+    [z,c,d,type_id,[[a,a],[a,x],[a,b],[a,y],[a,c],[a,z]]],
+    [w,d,e,type_id,[[a,a],[a,x],[a,b],[a,y],[a,c],[a,z],[a,d],[a,w]]],
+  ], type_id, GRAPH_TABLE, MP_TABLE);
+};
+export const testSeparation2 = (needCheck = true) => async () => {
+  debug('testSeparation2');
+  await clear(type_id);
+  const a = await insertNode(type_id, 'node');
+  const b = await insertNode(type_id, 'node');
+  const c = await insertNode(type_id, 'node'); // -
+  const d = await insertNode(type_id, 'node'); // |
+  const e = await insertNode(type_id, 'node'); // |
+  const x = await insertLink(a, b, type_id, 'down');
+  const y = await insertLink(b, c, type_id, 'down'); // -
+  const z = await insertLink(c, d, type_id, 'down'); // |
+  const w = await insertLink(d, e, type_id, 'down'); // |
+  await deleteNode(y); // -
+  if (needCheck) await checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,x],[a,b]]],
+    [c,0,0,type_id,[[c,c]]],
+    [d,0,0,type_id,[[c,c],[c,z],[c,d]]],
+    [e,0,0,type_id,[[c,c],[c,z],[c,d],[c,w],[c,e]]],
+    [x,a,b,type_id,[[a,a],[a,x]]],
+    [z,c,d,type_id,[[c,c],[c,z]]],
+    [w,d,e,type_id,[[c,c],[c,z],[c,d],[c,w]]],
+  ], type_id, GRAPH_TABLE, MP_TABLE);
+};

@@ -103,17 +103,29 @@ export const check = async (hash: { [name:string]: number }, type_id: number) =>
   return { nodes, mp };
 };
 
-export const checkManual = async (links: [number, number, number, number, [number, number][]][], type_id: number, GRAPH_TABLE: string, MP_TABLE: string) => {
+export const checkManual = async (input: [number, number, number, number, [number, number][]][], type_id: number, GRAPH_TABLE: string, MP_TABLE: string) => {
   const { nodes, mp } = await fetch(type_id, ID_TYPE, GRAPH_TABLE, MP_TABLE);
 
   const ns = [];
   const ls = [];
+  const handledMP = {};
 
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
-    const l = links[i];
-    ns.push({ id: n.id, from_id: n.from_id || 0, to_id: n.to_id || 0, type_id: n.type_id || 0, _by_item: mp.filter(mp => mp.item_id === n.id).map(a => ({ root_id: a.root_id, path_item_id: a.path_item_id })) });
-    ls.push({ id: l[0], from_id: l[1], to_id: l[2], type_id: l[3], _by_item: l[4].map(a => ({ root_id: a[0], path_item_id: a[1] })) });
+    const l = input[i];
+    ns.push({ id: n.id, from_id: n.from_id || 0, to_id: n.to_id || 0, type_id: n.type_id || 0, _by_item: mp.filter((mp) => {
+      handledMP[mp.id] = true;
+      return mp.item_id === n.id;
+    }).map(a => ({ root_id: a.root_id, path_item_id: a.path_item_id })) });
+    ls.push({ id: l[0], from_id: l[1], to_id: l[2], type_id: l[3], _by_item: l[4].map((a) => {
+      return { root_id: a[0], path_item_id: a[1] };
+    }) });
   }
   assert.deepStrictEqual(ns, ls);
+  const notHandledMp = [];
+  for (let i = 0; i < mp.length; i++) {
+    const mark = mp[i];
+    if (!handledMP[mark.id]) notHandledMp[mark.id];
+  }
+  if (notHandledMp.length) throw new Error(`Not handled MP marks: ${notHandledMp}`);
 }

@@ -6,7 +6,7 @@ import Chance from 'chance';
 import { check, checkManual } from '../check';
 import { client } from '../client';
 import fs from 'fs';
-import { beforeAllHandler, prepare, testMinus15, testPlus15, testRecursive, testRecursiveSameRoot } from '../imports/multidirectional';
+import { beforeAllHandler, prepare, testMinus15, testPlus15, testRecursive, testRecursiveSameRoot, testSeparation1, testSeparation2 } from '../imports/multidirectional';
 
 const chance = new Chance();
 const debug = Debug('materialized-path:test');
@@ -36,3 +36,7 @@ itDelay();
 it('recursive', testRecursive(true));
 itDelay();
 it('recursiveSameRoot', testRecursiveSameRoot(true));
+itDelay();
+it('testSeparation1', testSeparation1(true));
+itDelay();
+it('testSeparation2', testSeparation2(true));
