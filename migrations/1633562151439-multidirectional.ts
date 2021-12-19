@@ -75,6 +75,7 @@ export const up = async ({
           column_mapping: {
             id: 'to_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -93,6 +94,7 @@ export const up = async ({
           column_mapping: {
             id: 'from_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },

@@ -51,6 +51,7 @@ export const up = async ({
           column_mapping: {
             [ID_FIELD]: 'item_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -70,6 +71,7 @@ export const up = async ({
           column_mapping: {
             [ID_FIELD]: 'path_item_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -89,6 +91,7 @@ export const up = async ({
           column_mapping: {
             [ID_FIELD]: 'root_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -108,6 +111,7 @@ export const up = async ({
           column_mapping: {
             [ID_FIELD]: 'group_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -127,6 +131,7 @@ export const up = async ({
           column_mapping: {
             item_id: ID_FIELD,
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -146,6 +151,7 @@ export const up = async ({
           column_mapping: {
             path_item_id: ID_FIELD,
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -165,6 +171,7 @@ export const up = async ({
           column_mapping: {
             root_id: ID_FIELD,
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -184,6 +191,7 @@ export const up = async ({
           column_mapping: {
             item_id: 'item_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -203,6 +211,7 @@ export const up = async ({
           column_mapping: {
             path_item_id: 'path_item_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -222,6 +231,7 @@ export const up = async ({
           column_mapping: {
             position_id: 'position_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -241,6 +251,7 @@ export const up = async ({
           column_mapping: {
             group_id: ID_FIELD,
           },
+          insertion_order: 'after_parent',
         },
       },
     },
@@ -260,6 +271,7 @@ export const up = async ({
           column_mapping: {
             root_id: 'root_id',
           },
+          insertion_order: 'after_parent',
         },
       },
     },
