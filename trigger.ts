@@ -316,6 +316,7 @@ export const Trigger = ({
       -- delete trash roots
       DELETE FROM "${mpTableName}"
       WHERE
+      "group_id" = ${groupInsert} AND
       "root_id" IN (
         SELECT flowItem."item_id"
         FROM "${graphTableName}" as flowLink, "${mpTableName}" as flowItem
