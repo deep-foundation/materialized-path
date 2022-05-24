@@ -39,6 +39,8 @@ export interface IOptions {
 
   isAllowSpreadFromOutCurrent?: string;
   isAllowSpreadCurrentToIn?: string;
+
+  postfix?: string;
 }
 
 const wrapAnd = (code) => code ? 'AND '+code : '';
@@ -76,12 +78,14 @@ export const Trigger = ({
 
   isAllowSpreadFromOutCurrent = 'FALSE',
   isAllowSpreadCurrentToIn = 'FALSE',
+
+  postfix = '',
 }: IOptions) => ({
   downFunctionInsertNode: () => sql`
-    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function CASCADE;
-    DROP FUNCTION IF EXISTS ${mpTableName}__insert_link__function_core CASCADE;
+    DROP FUNCTION IF EXISTS ${mpTableName+postfix}__insert_link__function CASCADE;
+    DROP FUNCTION IF EXISTS ${mpTableName+postfix}__insert_link__function_core CASCADE;
   `,
-  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function_core(NEW RECORD, groupid ${id_type} DEFAULT 0)
+  upFunctionInsertNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName+postfix}__insert_link__function_core(NEW RECORD, groupid ${id_type} DEFAULT 0)
   RETURNS VOID AS $trigger$
   DECLARE
     insertCategory TEXT;
@@ -354,19 +358,19 @@ export const Trigger = ({
     ${iteratorInsertEnd}
   END;
   $trigger$ LANGUAGE plpgsql;
-  CREATE OR REPLACE FUNCTION ${mpTableName}__insert_link__function()
+  CREATE OR REPLACE FUNCTION ${mpTableName+postfix}__insert_link__function()
   RETURNS TRIGGER AS $trigger$
   BEGIN
-    PERFORM ${mpTableName}__insert_link__function_core(NEW);
+    PERFORM ${mpTableName+postfix}__insert_link__function_core(NEW);
     RETURN NEW;
   END;
   $trigger$ LANGUAGE plpgsql;`,
   
   downFunctionDeleteNode: () => sql`
-    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function CASCADE;
-    DROP FUNCTION IF EXISTS ${mpTableName}__delete_link__function_core CASCADE;
+    DROP FUNCTION IF EXISTS ${mpTableName+postfix}__delete_link__function CASCADE;
+    DROP FUNCTION IF EXISTS ${mpTableName+postfix}__delete_link__function_core CASCADE;
   `,
-  upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName}__delete_link__function_core(OLD RECORD${iteratorDeleteArgumentGet ? `,${iteratorDeleteArgumentGet}` : ''})
+  upFunctionDeleteNode: () => sql`CREATE OR REPLACE FUNCTION ${mpTableName+postfix}__delete_link__function_core(OLD RECORD${iteratorDeleteArgumentGet ? `,${iteratorDeleteArgumentGet}` : ''})
   RETURNS VOID AS $trigger$
   DECLARE
     linkFlow RECORD;
@@ -476,22 +480,22 @@ export const Trigger = ({
     WHERE "item_id" = OLD."${id_field}" AND "group_id" = ${groupDelete};
   END;
   $trigger$ LANGUAGE plpgsql;
-  CREATE OR REPLACE FUNCTION ${mpTableName}__delete_link__function()
+  CREATE OR REPLACE FUNCTION ${mpTableName+postfix}__delete_link__function()
   RETURNS TRIGGER AS $trigger$
   DECLARE
     ${iteratorDeleteDeclare}
   BEGIN
     ${iteratorDeleteBegin}
-      PERFORM ${mpTableName}__delete_link__function_core(OLD${iteratorDeleteArgumentSend ? `,${iteratorDeleteArgumentSend}` : ''});
+      PERFORM ${mpTableName+postfix}__delete_link__function_core(OLD${iteratorDeleteArgumentSend ? `,${iteratorDeleteArgumentSend}` : ''});
     ${iteratorDeleteEnd}
 
     RETURN OLD;
   END;
   $trigger$ LANGUAGE plpgsql;`,
   
-  downTriggerDelete: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__delete_link__trigger ON "${graphTableName}" CASCADE;`,
-  upTriggerDelete: () => sql`CREATE TRIGGER ${mpTableName}__delete_link__trigger AFTER DELETE ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__delete_link__function();`,
+  downTriggerDelete: () => sql`DROP TRIGGER IF EXISTS ${mpTableName+postfix}__delete_link__trigger ON "${graphTableName}" CASCADE;`,
+  upTriggerDelete: () => sql`CREATE TRIGGER ${mpTableName+postfix}__delete_link__trigger AFTER DELETE ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName+postfix}__delete_link__function();`,
 
-  downTriggerInsert: () => sql`DROP TRIGGER IF EXISTS ${mpTableName}__insert_link__trigger ON "${graphTableName}" CASCADE;`,
-  upTriggerInsert: () => sql`CREATE TRIGGER ${mpTableName}__insert_link__trigger AFTER INSERT ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName}__insert_link__function();`,
+  downTriggerInsert: () => sql`DROP TRIGGER IF EXISTS ${mpTableName+postfix}__insert_link__trigger ON "${graphTableName}" CASCADE;`,
+  upTriggerInsert: () => sql`CREATE TRIGGER ${mpTableName+postfix}__insert_link__trigger AFTER INSERT ON "${graphTableName}" FOR EACH ROW EXECUTE PROCEDURE ${mpTableName+postfix}__insert_link__function();`,
 });
