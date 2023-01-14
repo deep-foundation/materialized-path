@@ -1,6 +1,6 @@
 import { client } from './client';
 import Debug from 'debug';
-import { gql } from '@apollo/client';
+import { gql } from 'apollo-boost';
 import forEach from 'lodash/forEach';
 import assert from 'assert';
 
