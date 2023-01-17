@@ -1,0 +1,14 @@
+name: NPM Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+      
+jobs:
+  main:
+    uses: deep-foundation/workflows/.github/workflows/npm-publish.yml@main
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
