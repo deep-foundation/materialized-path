@@ -9,6 +9,4 @@ on:
       
 jobs:
   main:
-    uses: deep-foundation/workflows/.github/workflows/npm-publish.yml@main
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    uses: deep-foundation/workflows/.github/workflows/npm-test.yml@main
