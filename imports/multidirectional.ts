@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 import Debug from 'debug';
-import { gql } from '@apollo/client';
+import { gql } from 'apollo-boost';
 import Chance from 'chance';
 import { check, checkManual } from '../check';
 import { client } from '../client';
