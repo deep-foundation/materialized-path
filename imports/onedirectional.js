@@ -26,10 +26,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.testRecursiveLong = exports.testRecursiveSameRoot = exports.testRecursive = exports.testDeeplinksDemoTree = exports.test14 = exports.test13 = exports.test12 = exports.test11 = exports.test10 = exports.test9 = exports.test8 = exports.testMultiparentalTree = exports.testMultipleWays = exports.testtree = exports.testMinus7 = exports.testPlus7 = exports.testMinus5 = exports.testPlus5 = exports.testMinus4 = exports.testPlus4 = exports.testMinus3 = exports.testPlus3 = exports.testMinus2 = exports.testPlus2 = exports.testMinus1 = exports.testPlus1 = exports.prepare = exports.beforeAllHandler = exports.type_id = exports.generateMultiparentalTree = exports.countMp = exports.findNoParent = exports.generateTree = exports.deleteNode = exports.clear = exports.insertLink = exports.insertNodes = exports.insertNode = void 0;
 require('dotenv').config();
 const debug_1 = __importDefault(require("debug"));
-const apollo_boost_1 = require("apollo-boost");
+const client_1 = require("@apollo/client");
 const chance_1 = __importDefault(require("chance"));
 const check_1 = require("../check");
-const client_1 = require("../client");
+const client_2 = require("../client");
 const chance = new chance_1.default();
 const debug = debug_1.default('materialized-path:test');
 const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
@@ -38,7 +38,7 @@ const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
 const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 exports.insertNode = (type_id, idType = ID_TYPE) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
-    const result = yield client_1.client.mutate({ mutation: apollo_boost_1.gql `mutation InsertNode($type_id: ${idType}) {
+    const result = yield client_2.client.mutate({ mutation: client_1.gql `mutation InsertNode($type_id: ${idType}) {
     insert_links: insert_${GRAPH_TABLE}(objects: { type_id: $type_id }) { returning { id } }
   }`, variables: { type_id } });
     if (result === null || result === void 0 ? void 0 : result.errors) {
@@ -51,7 +51,7 @@ exports.insertNode = (type_id, idType = ID_TYPE) => __awaiter(void 0, void 0, vo
 });
 exports.insertNodes = (nodes) => __awaiter(void 0, void 0, void 0, function* () {
     var _e, _f;
-    const result = yield client_1.client.mutate({ mutation: apollo_boost_1.gql `mutation InsertNodes($objects: [${GRAPH_TABLE}_insert_input!]!) {
+    const result = yield client_2.client.mutate({ mutation: client_1.gql `mutation InsertNodes($objects: [${GRAPH_TABLE}_insert_input!]!) {
     insert_links: insert_${GRAPH_TABLE}(objects: $objects) { returning { id } }
   }`, variables: { objects: nodes } });
     if (result === null || result === void 0 ? void 0 : result.errors) {
@@ -65,7 +65,7 @@ exports.insertNodes = (nodes) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.insertLink = (fromId, toId, type_id, idType = ID_TYPE) => __awaiter(void 0, void 0, void 0, function* () {
     var _g, _h, _j, _k;
-    const result = yield client_1.client.mutate({ mutation: apollo_boost_1.gql `mutation InsertLink($fromId: ${idType}, $toId: ${idType}, $type_id: ${idType}) {
+    const result = yield client_2.client.mutate({ mutation: client_1.gql `mutation InsertLink($fromId: ${idType}, $toId: ${idType}, $type_id: ${idType}) {
     insert_links: insert_${GRAPH_TABLE}(objects: { from_id: $fromId, to_id: $toId, type_id: $type_id }) { returning { id } }
   }`, variables: { fromId, toId, type_id } });
     if (result === null || result === void 0 ? void 0 : result.errors) {
@@ -77,7 +77,7 @@ exports.insertLink = (fromId, toId, type_id, idType = ID_TYPE) => __awaiter(void
     return id;
 });
 exports.clear = (type_id, idType = ID_TYPE) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield client_1.client.mutate({ mutation: apollo_boost_1.gql `mutation Clear($type_id: ${idType}) {
+    const result = yield client_2.client.mutate({ mutation: client_1.gql `mutation Clear($type_id: ${idType}) {
     delete_links__mp: delete_${MP_TABLE}(where: { item: { type_id: { _eq: $type_id } } }) { affected_rows }
     delete_links: delete_${GRAPH_TABLE}(where: { type_id: { _eq: $type_id } }) { affected_rows }
   }`, variables: { type_id } });
@@ -89,7 +89,7 @@ exports.clear = (type_id, idType = ID_TYPE) => __awaiter(void 0, void 0, void 0,
 });
 exports.deleteNode = (id, idType = ID_TYPE) => __awaiter(void 0, void 0, void 0, function* () {
     var _l, _m, _o, _p;
-    const result = yield client_1.client.mutate({ mutation: apollo_boost_1.gql `mutation DeleteNode($id: ${idType}) {
+    const result = yield client_2.client.mutate({ mutation: client_1.gql `mutation DeleteNode($id: ${idType}) {
     delete_links: delete_${GRAPH_TABLE}(where: { id: { _eq: $id } }) { returning { id } }
   }`, variables: { id } });
     if (result === null || result === void 0 ? void 0 : result.errors) {
@@ -118,7 +118,7 @@ exports.generateTree = (initialId, count = 1000) => {
 };
 exports.findNoParent = (notId, type_id, idType = ID_TYPE) => __awaiter(void 0, void 0, void 0, function* () {
     var _q, _r;
-    const result = yield client_1.client.query({ query: apollo_boost_1.gql `query FIND_NO_PARENT($notId: ${idType}, $type_id: ${idType}) {
+    const result = yield client_2.client.query({ query: client_1.gql `query FIND_NO_PARENT($notId: ${idType}, $type_id: ${idType}) {
     nodes: ${GRAPH_TABLE}(where: {
       from_id: { _is_null: true },
       to_id: { _is_null: true },
@@ -130,7 +130,7 @@ exports.findNoParent = (notId, type_id, idType = ID_TYPE) => __awaiter(void 0, v
 });
 exports.countMp = () => __awaiter(void 0, void 0, void 0, function* () {
     var _s, _t, _u;
-    const result = yield client_1.client.query({ query: apollo_boost_1.gql `query COUNT_MP {
+    const result = yield client_2.client.query({ query: client_1.gql `query COUNT_MP {
     mp_example__links__mp_aggregate {
       aggregate {
         count
