@@ -10,10 +10,10 @@ import fs from 'fs';
 const chance = new Chance();
 const debug = Debug('materialized-path:test');
 
-const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
-const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
-const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
-const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
+export const SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
+export const MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';
+export const GRAPH_TABLE = process.env.MIGRATIONS_GRAPH_TABLE || 'mp_example__links';
+export const ID_TYPE = process.env.MIGRATIONS_ID_TYPE_GQL || 'Int';
 
 export const insertNode = async (type_id: number, idType: string = ID_TYPE) => {
   const result: any = await client.mutate({ mutation: gql`mutation InsertNode($type_id: ${idType}) {
@@ -161,30 +161,38 @@ export const prepare = async () => {
   return type_id;
 };
 
-export const testPlus1 = (needCheck = true) => async () => {
+export const testPlus1 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('+1');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   if (needCheck) await check({ a, b }, type_id);
+  callback && await callback({ a, b }, type_id);
 };
-export const testMinus1 = (needCheck = true) => async () => {
+export const testMinus1 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('-1');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   await deleteNode(a);
   if (needCheck) await check({ a, b }, type_id);
+  callback && await callback({ a, b }, type_id);
 };
-export const testPlus2 = (needCheck = true) => async () => {
+export const testPlus2 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('+2');
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
   const c = await insertLink(a, b, type_id);
   if (needCheck) await check({ a, b, c }, type_id);
+  if (needCheck) await checkManual([
+    [a,0,0,type_id,[[a,a]]],
+    [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
+    [c,a,b,type_id,[[a,a],[a,c]]],
+  ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ a, b, c }, type_id);
 };
-export const testMinus2 = (needCheck = true) => async () => {
+export const testMinus2 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('-2');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -192,8 +200,9 @@ export const testMinus2 = (needCheck = true) => async () => {
   const c = await insertLink(a, b, type_id);
   await deleteNode(c);
   if (needCheck) await check({ a, b, c }, type_id);
+  callback && await callback({ a, b, c }, type_id);
 };
-export const testPlus3 = (needCheck = true) => async () => {
+export const testPlus3 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('+3');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -209,8 +218,9 @@ export const testPlus3 = (needCheck = true) => async () => {
     [d,0,0,type_id,[[a,a],[a,c],[a,b],[a,e],[a,d]]],
     [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ a, b, c, d, e }, type_id);
 };
-export const testMinus3 = (needCheck = true) => async () => {
+export const testMinus3 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('-3');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -226,8 +236,9 @@ export const testMinus3 = (needCheck = true) => async () => {
     [c,a,b,type_id,[[a,a],[a,c]]],
     [d,0,0,type_id,[[d,d]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ a, b, c, d, e }, type_id);
 };
-export const testPlus4 = (needCheck = true) => async () => {
+export const testPlus4 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('+4');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -238,9 +249,11 @@ export const testPlus4 = (needCheck = true) => async () => {
   const x = await insertNode(type_id);
   const y = await insertLink(x, a, type_id);
   if (needCheck) await check({ a, b, c, d, e, x, y }, type_id);
+  callback && await callback({ a, b, c, d, e, x, y }, type_id);
 };
-export const testMinus4 = (needCheck = true) => async () => {
+export const testMinus4 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('-4');
+  await prepare();
   await clear(type_id);
   const a = await insertNode(type_id);
   const b = await insertNode(type_id);
@@ -259,8 +272,9 @@ export const testMinus4 = (needCheck = true) => async () => {
     [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
     [x,0,0,type_id,[[x,x]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ a, b, c, d, e, x, y }, type_id);
 };
-export const testPlus5 = (needCheck = true) => async () => {
+export const testPlus5 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('+5');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -280,8 +294,9 @@ export const testPlus5 = (needCheck = true) => async () => {
     [x,0,0,type_id,[[x,x]]],
     [y,x,b,type_id,[[x,x],[x,y]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ a, b, c, d, e, x, y }, type_id);
 };
-export const testMinus5 = (needCheck = true) => async () => {
+export const testMinus5 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('-5');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -301,8 +316,9 @@ export const testMinus5 = (needCheck = true) => async () => {
     [e,b,d,type_id,[[a,a],[a,c],[a,b],[a,e]]],
     [x,0,0,type_id,[[x,x]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ a, b, c, d, e, x, y }, type_id);
 };
-export const testPlus7 = (needCheck = true) => async () => {
+export const testPlus7 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('+7');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -312,8 +328,9 @@ export const testPlus7 = (needCheck = true) => async () => {
   const e = await insertLink(b, d, type_id);
   const y = await insertLink(a, d, type_id);
   if (needCheck) await check({ a, b, c, d, e, y }, type_id);
+  callback && await callback({ a, b, c, d, e, y }, type_id);
 };
-export const testMinus7 = (needCheck = true) => async () => {
+export const testMinus7 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('-7');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -324,8 +341,9 @@ export const testMinus7 = (needCheck = true) => async () => {
   const y = await insertLink(a, d, type_id);
   await deleteNode(y);
   if (needCheck) await check({ a, b, c, d, e, y }, type_id);
+  callback && await callback({ a, b, c, d, e, y }, type_id);
 };
-export const testtree = (needCheck = true) => async () => {
+export const testtree = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('tree');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -334,8 +352,9 @@ export const testtree = (needCheck = true) => async () => {
   const ns = {};
   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
   if (needCheck) await check({ a, ...ns }, type_id);
+  callback && await callback({ a, ...ns }, type_id);
 };
-export const testMultipleWays = (needCheck = true) => async () => {
+export const testMultipleWays = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('multiple ways');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -349,8 +368,9 @@ export const testMultipleWays = (needCheck = true) => async () => {
   const n = await insertLink(b, d, type_id);
   const f = await insertLink(d, c, type_id);
   if (needCheck) await check({ a, b, c, d, x, y, r, m, n, f }, type_id);
+  callback && await callback({ a, b, c, d, x, y, r, m, n, f }, type_id);
 };
-export const testMultiparentalTree = (needCheck = true) => async () => {
+export const testMultiparentalTree = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('multiparental tree');
   await clear(type_id);
   const a = await insertNode(type_id);
@@ -360,8 +380,9 @@ export const testMultiparentalTree = (needCheck = true) => async () => {
   for (let d = 0; d < ids.length; d++) ns[ids[d]] = ids[d];
   await generateMultiparentalTree(array, ns, 30);
   if (needCheck) await check({ a, ...ns }, type_id);
+  callback && await callback({ a, ...ns }, type_id);
 };
-export const test8 = (needCheck = true) => async () => {
+export const test8 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('8');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -375,8 +396,9 @@ export const test8 = (needCheck = true) => async () => {
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
   await insertNode(type_id);
+  callback && await callback({ w }, type_id);
 };
-export const test9 = (needCheck = true) => async () => {
+export const test9 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('9');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -391,8 +413,9 @@ export const test9 = (needCheck = true) => async () => {
     [a,0,0,type_id,[[a,a]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
+  callback && await callback({ w, c, a }, type_id);
 };
-export const test10 = (needCheck = true) => async () => {
+export const test10 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('10');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -407,8 +430,9 @@ export const test10 = (needCheck = true) => async () => {
     [b,0,0,type_id,[[c,c],[c,b]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
+  callback && await callback({ w, c, b }, type_id);
 };
-export const test11 = (needCheck = true) => async () => {
+export const test11 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('11');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -424,8 +448,9 @@ export const test11 = (needCheck = true) => async () => {
     [b,0,0,type_id,[[a,a],[a,c],[a,b]]],
     [a,0,0,type_id,[[a,a]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ w, c, b, a }, type_id);
 };
-export const test12 = (needCheck = true) => async () => {
+export const test12 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('12');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -441,8 +466,9 @@ export const test12 = (needCheck = true) => async () => {
     [c,a,b,type_id,[[c,c]]],
     [b,0,0,type_id,[[c,c], [c,b]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ w, c, b, a }, type_id);
 };
-export const test13 = (needCheck = true) => async () => {
+export const test13 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('13');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -458,8 +484,9 @@ export const test13 = (needCheck = true) => async () => {
     [w,0,0,type_id,[[w,w]]],
     [c,a,b,type_id,[[c,c]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
+  callback && await callback({ w, c, b, a }, type_id);
 };
-export const test14 = (needCheck = true) => async () => {
+export const test14 = (needCheck = true, callback?: (ids: { [key:string]: number }, type_id?: number) => Promise<void>) => async () => {
   debug('14');
   await clear(type_id);
   const w = await insertNode(type_id);
@@ -474,6 +501,7 @@ export const test14 = (needCheck = true) => async () => {
     [b,0,0,type_id,[[b,b]]],
   ], type_id, GRAPH_TABLE, MP_TABLE);
   await insertNode(type_id);
+  callback && await callback({ w, c, b }, type_id);
 };
 export const testDeeplinksDemoTree = (needCheck = true) => async () => {
   debug('deeplinks demo tree');
