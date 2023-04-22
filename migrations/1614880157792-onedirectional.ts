@@ -116,8 +116,10 @@ export const up = async ({
   await upRels({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
   await api.sql(trigger.upFunctionInsertNode());
   await api.sql(trigger.upFunctionDeleteNode());
+  await api.sql(trigger.upFunctionUpdateNode());
   await api.sql(trigger.upTriggerDelete());
   await api.sql(trigger.upTriggerInsert());
+  await api.sql(trigger.upTriggerUpdate());
 
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__id_hash ON ${GRAPH_TABLE} USING hash (id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__from_id_hash ON ${GRAPH_TABLE} USING hash (from_id);`);
@@ -126,8 +128,6 @@ export const up = async ({
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__to_id_btree ON ${GRAPH_TABLE} USING btree (to_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_hash ON ${GRAPH_TABLE} USING hash (type_id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${GRAPH_TABLE}__type_id_btree ON ${GRAPH_TABLE} USING btree (type_id); `);
-
-  await api.sql(`CREATE INDEX ${GRAPH_TABLE}__source_id_target_id_type_id__btree ON ${GRAPH_TABLE} ("_source_id", "_target_id", "_type_id");`);
 
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__id_hash ON ${MP_TABLE} USING hash (id);`);
   await api.sql(`CREATE INDEX IF NOT EXISTS ${MP_TABLE}__item_id_hash ON ${MP_TABLE} USING hash (item_id);`);
@@ -164,8 +164,10 @@ export const down = async ({
 } = {}) => {
   await api.sql(trigger.downTriggerDelete());
   await api.sql(trigger.downTriggerInsert());
+  await api.sql(trigger.downTriggerUpdate());
   await api.sql(trigger.downFunctionInsertNode());
   await api.sql(trigger.downFunctionDeleteNode());
+  await api.sql(trigger.downFunctionUpdateNode());
   await downPerms({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
   await downRels({ SCHEMA, MP_TABLE, GRAPH_TABLE, api });
   await downTable({ SCHEMA, MP_TABLE, api });

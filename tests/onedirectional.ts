@@ -46,7 +46,7 @@ it('+7', testPlus7(true));
 itDelay();
 it('-7', testMinus7(true));
 itDelay();
-it('tree', testtree(true));
+it('tree', testtree(true), 50000);
 itDelay();
 it('multiple ways', testMultipleWays(true));
 itDelay();

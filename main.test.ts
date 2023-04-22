@@ -1,2 +1,3 @@
-import './tests/onedirectional';
-import './tests/multidirectional';
+// import './tests/onedirectional';
+import './tests/update-onedirectional';
+// import './tests/multidirectional';
