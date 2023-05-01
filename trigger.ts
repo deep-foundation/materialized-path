@@ -527,7 +527,9 @@ export const Trigger = ({
       inFromFlow RECORD;
       ${iteratorInsertDeclare}
     BEGIN
-      ${result.upFunctionDeleteNodeCore().toString()}
+      ${iteratorDeleteBegin}
+        ${result.upFunctionDeleteNodeCore().toString()}
+      ${iteratorDeleteEnd}
       ${result.upFunctionInsertNodeCore().toString()}
     END;
     $trigger$ LANGUAGE plpgsql;
