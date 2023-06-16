@@ -19,7 +19,6 @@
     "microtime": "^3.0.0",
     "ts-jest": "^26.5.4",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.0.4"
   },
   "scripts": {
     "gitpod-prepare": "(yes | sudo apt install screen); (yes | sudo apt install rsync); (yes | sudo apt install net-tools); screen -S docker -d -m sudo docker-up",
@@ -36,7 +35,8 @@
   "devDependencies": {
     "@deep-foundation/hasura": "0.0.39",
     "jest": "^26.6.3",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "typescript": "5.0.4"
   },
   "peerDependencies": {
     "@deep-foundation/hasura": "*"
