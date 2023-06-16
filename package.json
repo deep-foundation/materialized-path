@@ -18,7 +18,7 @@
     "graphql": "^15.5.3",
     "microtime": "^3.0.0",
     "ts-jest": "^26.5.4",
-    "ts-node-dev": "^2.0.0",
+    "ts-node-dev": "^2.0.0"
   },
   "scripts": {
     "gitpod-prepare": "(yes | sudo apt install screen); (yes | sudo apt install rsync); (yes | sudo apt install net-tools); screen -S docker -d -m sudo docker-up",
