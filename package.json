@@ -33,7 +33,7 @@
     "benchmark": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; DEBUG='materialized-path:*' ts-node benchmarks/index.ts"
   },
   "devDependencies": {
-    "@deep-foundation/hasura": "^0.0.46",
+    "@deep-foundation/hasura": "^0.0.50",
     "jest": "^29.5.0",
     "ts-node": "^10.9.1",
     "typescript": "5.0.4"
