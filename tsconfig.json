@@ -1,14 +1,17 @@
 {
-  "extends": "@tsconfig/recommended/tsconfig.json",
-  "exclude": [
-    "jest.config.ts",
-  ],
   "compilerOptions": {
-    "jsx": "react",
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "module": "Node16",
+    "resolveJsonModule": true,
     "declaration": true,
-    "sourceMap": true,
-    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node16",
+    "skipLibCheck": true,
+    // Only for hasura, react-hasura, materialized-path, deeplinks because they are bad typed
     "strictNullChecks": false,
-    "strict": false
-  }
+    "strict": false,
+
+  },
 }

@@ -8,6 +8,7 @@
     "type": "git",
     "url": "ssh://git@github.com/deep-foundation/materialized-path.git"
   },
+  "type": "module",
   "description": "",
   "dependencies": {
     "@types/jest": "^26.0.22",
@@ -38,7 +39,7 @@
     "typescript": "^5.0.4"
   },
   "peerDependencies": {
-    "@deep-foundation/hasura": "~0.0.53",
+    "@deep-foundation/hasura": "~0.0.58",
     "graphql": "^15.5.3"
   }
 }

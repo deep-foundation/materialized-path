@@ -1,4 +1,4 @@
-import { sql } from '@deep-foundation/hasura/sql';
+import { sql } from '@deep-foundation/hasura/sql.js';
 
 const call = (strOrFn: string | ((action: string) => string), action: string): string => {
   if (typeof(strOrFn) === 'function') return strOrFn(action);
