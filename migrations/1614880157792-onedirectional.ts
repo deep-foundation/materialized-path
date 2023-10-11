@@ -1,10 +1,10 @@
-import { HasuraApi } from '@deep-foundation/hasura/api';
-import { sql } from '@deep-foundation/hasura/sql';
-import { Trigger } from '../trigger';
+import { HasuraApi } from '@deep-foundation/hasura/api.js';
+import { sql } from '@deep-foundation/hasura/sql.js';
+import { Trigger } from '../trigger.js';
 
-import { up as upTable, down as downTable } from '../table';
-import { up as upRels, down as downRels } from '../relationships';
-import { up as upPerms, down as downPerms } from '../permissions';
+import { up as upTable, down as downTable } from '../table.js';
+import { up as upRels, down as downRels } from '../relationships.js';
+import { up as upPerms, down as downPerms } from '../permissions.js';
 
 const api = new HasuraApi({
   path: process.env.MIGRATIONS_HASURA_PATH,

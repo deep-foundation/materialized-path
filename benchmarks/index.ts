@@ -1,6 +1,6 @@
 import { Suite } from 'benchmark';
-import { insertLink, insertNode, insertNodes, beforeAllHandler as beforeAllHandlerM, prepare as prepareM } from '../imports/multidirectional';
-import { beforeAllHandler as beforeAllHandlerO, prepare as prepareO, test10, test11, test12, test13, test14, test8, test9, testMinus1, testMinus2, testMinus3, testMinus4, testMinus5, testMinus7, testMultiparentalTree, testMultipleWays, testPlus1, testPlus2, testPlus3, testPlus4, testPlus5, testPlus7, testtree } from '../imports/onedirectional';
+import { insertLink, insertNode, insertNodes, beforeAllHandler as beforeAllHandlerM, prepare as prepareM } from '../imports/multidirectional.js';
+import { beforeAllHandler as beforeAllHandlerO, prepare as prepareO, test10, test11, test12, test13, test14, test8, test9, testMinus1, testMinus2, testMinus3, testMinus4, testMinus5, testMinus7, testMultiparentalTree, testMultipleWays, testPlus1, testPlus2, testPlus3, testPlus4, testPlus5, testPlus7, testtree } from '../imports/onedirectional.js';
 
 const DELAY = +process.env.DELAY || 0;
 const delay = time => new Promise(res => setTimeout(res, time));
