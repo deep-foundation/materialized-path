@@ -1,5 +1,5 @@
-import { HasuraApi } from '@deep-foundation/hasura/api.js';
-import { Trigger } from './trigger.js';
+import { HasuraApi } from '@deep-foundation/hasura/api';
+import { Trigger } from './trigger';
 
 const DEFAULT_SCHEMA = process.env.MIGRATIONS_SCHEMA || 'public';
 const DEFAULT_MP_TABLE = process.env.MIGRATIONS_MP_TABLE || 'mp_example__links__mp';

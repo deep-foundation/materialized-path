@@ -3,10 +3,10 @@ require('dotenv').config();
 import Debug from 'debug';
 import { gql } from 'apollo-boost';
 import Chance from 'chance';
-import { check, checkManual } from '../check.js';
-import { client } from '../client.js';
+import { check, checkManual } from '../check';
+import { client } from '../client';
 import fs from 'fs';
-import { beforeAllHandler, prepare, testMinus15, testPlus15, testRecursive, testRecursiveSameRoot, testSeparation1, testSeparation2 } from '../imports/multidirectional.js';
+import { beforeAllHandler, prepare, testMinus15, testPlus15, testRecursive, testRecursiveSameRoot, testSeparation1, testSeparation2 } from '../imports/multidirectional';
 
 const chance = new Chance();
 const debug = Debug('materialized-path:test');

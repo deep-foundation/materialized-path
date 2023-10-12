@@ -1,7 +1,7 @@
-import { client } from './client.js';
+import { client } from './client';
 import Debug from 'debug';
 import { gql } from 'apollo-boost';
-import forEach from 'lodash/forEach.js';
+import forEach from 'lodash/forEach';
 import assert from 'assert';
 
 const debug = Debug('materialized-path:check');

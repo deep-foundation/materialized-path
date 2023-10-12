@@ -3,8 +3,8 @@ require('dotenv').config();
 import Debug from 'debug';
 import { gql } from 'apollo-boost';
 import Chance from 'chance';
-import { check, checkManual } from '../check.js';
-import { client } from '../client.js';
+import { check, checkManual } from '../check';
+import { client } from '../client';
 import fs from 'fs';
 
 const chance = new Chance();
