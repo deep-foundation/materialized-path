@@ -120,7 +120,7 @@ export const countMp = async () => {
 
 export const generateMultiparentalTree = async (array, nodesHash, count = 100) => {
   const nodes = array.filter(a => !a.from_id && !a.to_id);
-  let founded = 0;
+  let found = 0;
   let skipped = 0;
   for (let i = 0; i < count; i++) {
     const s = chance.integer({ min: 0, max: nodes.length - 1 });
@@ -133,7 +133,7 @@ export const generateMultiparentalTree = async (array, nodesHash, count = 100) =
       if (sn && tn) {
         const id = await insertLink(sn.id, tn.id, type_id);
         nodesHash[id] = id;
-        founded++;
+        found++;
         debug(`count mp: ${await countMp()}`);
       }
     } else {
@@ -141,7 +141,7 @@ export const generateMultiparentalTree = async (array, nodesHash, count = 100) =
       skipped++;
     }
   }
-  debug(`multiparental tree founded: ${founded}, skipped: ${skipped}`);
+  debug(`multiparental tree found: ${found}, skipped: ${skipped}`);
 };
 
 export let type_id;
