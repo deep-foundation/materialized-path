@@ -35,3 +35,22 @@ npm run unmigrate;
 ```
 
 [Documentation]: https://deep-foundation.github.io/materialized-path/
+
+## Maintenance
+
+### Refresh package-lock.json
+
+This command deletes `node_modules`, `package-lock.json` and runs `npm i`. So everything is refreshed.
+
+```bash
+npm run package:refresh
+```
+
+### Release a new version
+
+```bash
+npm run package:release
+```
+
+After that it might be required to release new versions of:
+1. https://github.com/deep-foundation/deeplinks

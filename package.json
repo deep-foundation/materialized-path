@@ -21,10 +21,11 @@
   },
   "scripts": {
     "gitpod-prepare": "(yes | sudo apt install screen); (yes | sudo apt install rsync); (yes | sudo apt install net-tools); screen -S docker -d -m sudo docker-up",
+    "package:refresh": "rm -rf node_modules; rm -f package-lock.json; npm i",
     "package:build": "npx tsc --project tsconfig.json && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
     "package:unbuild": "rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts && (cd ./migrations && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts) && (cd ./benchmarks && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts) && (cd ./tests && rm -f ./*.js; rm -f ./*.js.map; rm -f ./*.d.ts)",
     "package:publish": "npm run package:build; npm publish --access public; npm run package:unbuild",
-    "package:release": "npm version patch && git push && git push --tags",
+    "package:release": "npm version patch && git push",
     "test": "export HASURA_PATH=localhost:8080; export HASURA_SSL=0; export HASURA_SECRET=myadminsecretkey; jest",
     "migrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate up --compiler='ts:@deep-foundation/hasura/compiler/index.js'",
     "unmigrate": "export MIGRATIONS_HASURA_PATH=localhost:8080; export MIGRATIONS_HASURA_SSL=0; export MIGRATIONS_HASURA_SECRET=myadminsecretkey; export $(grep -v '^#' .env | xargs); yes | DEBUG='deepcase:*' npx migrate down --compiler='ts:@deep-foundation/hasura/compiler/index.js'",
